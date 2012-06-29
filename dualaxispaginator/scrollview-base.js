@@ -261,7 +261,7 @@ Y.ScrollView = Y.extend(ScrollView, Y.Widget, {
      * @param duration {Number} Duration, in ms, of the scroll animation (default is 0)
      * @param easing {String} An easing equation if duration is set
      */
-    scrollTo: function(x, y, duration, easing) {
+    scrollTo: function(x, y, duration, easing, node) {
         var sv = this;
 
         // TODO: Figure out a better way to detect mousewheel events
@@ -276,6 +276,7 @@ Y.ScrollView = Y.extend(ScrollView, Y.Widget, {
 
         if (!sv._cDisabled) {
             var cb = sv._cb,
+                node = Y.one('#content li') || cb,
                 xSet = (x !== null),
                 ySet = (y !== null),
                 xMove = (xSet) ? x * -1 : 0,
@@ -297,7 +298,7 @@ Y.ScrollView = Y.extend(ScrollView, Y.Widget, {
 
             if (NATIVE_TRANSITIONS) {
                 // ANDROID WORKAROUND - try and stop existing transition, before kicking off new one.
-                cb.setStyle(TRANS.DURATION, ZERO).setStyle(TRANS.PROPERTY, EMPTY);
+                node.setStyle(TRANS.DURATION, ZERO).setStyle(TRANS.PROPERTY, EMPTY);
             }
 
             if (duration !== 0) {
@@ -319,13 +320,13 @@ Y.ScrollView = Y.extend(ScrollView, Y.Widget, {
                     callback = this._boundScollEnded = Y.bind(this._scrollEnded, this);
                 }
 
-                cb.transition(transition, callback);
+                node.transition(transition, callback);
             } else {
                 if (NATIVE_TRANSITIONS) {
-                    cb.setStyle('transform', this._transform(xMove, yMove));
+                    node.setStyle('transform', this._transform(xMove, yMove));
                 } else {
-                    if (xSet) { cb.setStyle(LEFT, xMove + PX); }
-                    if (ySet) { cb.setStyle(TOP, yMove + PX); }
+                    if (xSet) { node.setStyle(LEFT, xMove + PX); }
+                    if (ySet) { node.setStyle(TOP, yMove + PX); }
                 }
             }
         }
@@ -460,7 +461,7 @@ Y.ScrollView = Y.extend(ScrollView, Y.Widget, {
             /**
              * Internal state, defines whether or not the scrollview needs to snap to a boundary edge
              *
-             * @property _snapToEdge
+              * @property _snapToEdge
              * @type boolean
              * @protected
              */

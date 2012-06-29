@@ -15,7 +15,7 @@
     border: 2px solid green;
     -webkit-user-select: none;
     -moz-user-select: none;
-    overflow: hidden;
+    /*overflow: hidden;*/
 
 }
 #content {
@@ -54,12 +54,12 @@
                 axisX: true,
                 axisY: true,
                 // flick: false,
-                // plugins: [{
-                //     fn:Y.Plugin.ScrollViewPaginator, 
-                //     cfg:{
-                //         selector:">ul>li"
-                //     }
-                // }],
+                plugins: [{
+                    fn:Y.Plugin.ScrollViewPaginator, 
+                    cfg:{
+                        selector:">ul>li"
+                    }
+                }],
             }).render();
 
             scrollview.after(['scrollXChange', 'scrollYChange'], function(){
