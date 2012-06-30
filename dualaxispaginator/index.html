@@ -11,23 +11,33 @@
         
         <style>
 
-.yui3-scrollview {
-    border: 2px solid green;
-    -webkit-user-select: none;
-    -moz-user-select: none;
-    /*overflow: hidden;*/
+        #dataBox {
+            width:100%;
+            color:white;
+            background-color:green;
+            position:fixed;
+            left:0px;
+            bottom:0px;
+        }
 
-}
-#content {
-    white-space: nowrap;
-}
+        .yui3-scrollview {
+            /*border: 1px solid green;*/
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            overflow: hidden;
+        }
 
-#content > ul > li {
-    vertical-align:top;
-    display: inline-block;
-    white-space: normal;
-    border: 1px solid #000;
-}​
+        #content {
+            white-space: nowrap;
+        }
+
+        #content > ul > li {
+            /*visibility: hidden;*/
+            vertical-align:top;
+            display: inline-block;
+            white-space: normal;
+            border: 1px solid #000;
+        }​
 
         </style>
         
@@ -53,13 +63,18 @@
                 height:300,
                 axisX: true,
                 axisY: true,
-                // flick: false,
-                plugins: [{
-                    fn:Y.Plugin.ScrollViewPaginator, 
-                    cfg:{
-                        selector:">ul>li"
-                    }
-                }],
+                flick: {
+                    minDistance:10,
+                    minVelocity:0.3,
+                    axis: 'y'
+                },
+                // plugins: [{
+                //     fn:Y.Plugin.ScrollViewPaginator,
+                //     cfg:{
+                //         axis: 'x',
+                //         selector:">ul>li"
+                //     }
+                // }],
             }).render();
 
             scrollview.after(['scrollXChange', 'scrollYChange'], function(){
@@ -68,6 +83,10 @@
                 Y.one('#valX').set('innerHTML', x);
                 Y.one('#valY').set('innerHTML', y);
             });
+
+            // scrollview.pages.after('indexChange', function(e){
+            //     Y.one('#valIndex').set('innerHTML', e.newVal);
+            // });
             
             s = scrollview;
             
@@ -76,7 +95,13 @@
     </head>
 
     <body class="yui3-skin-sam">
+        <div id='dataBox'>
+            <p>X: <span id="valX">[0]</span></p>
+            <p>Y: <span id="valY">[0]</span></p>
+            <p>Index: <span id="valIndex">[0]</span></p>
+        </div>
         <div id="content">
+
             <ul>
                 <li>
                     <h2>Card 1</h2>
@@ -188,10 +213,6 @@
                     <p>Lorem ipsum dolor sit amet, consectetuer adipiscing elit. Aenean commodo ligula eget dolor. Aenean massa. Cum sociis natoque penatibus et magnis dis parturient montes, nascetur ridiculus mus. Donec quam felis, ultricies nec, pellentesque eu, pretium quis, sem. Nulla consequat massa quis enim. Donec pede justo, fringilla vel, aliquet nec, vulputate eget, arcu. In enim justo, rhoncus ut, imperdiet a, venenatis vitae, justo. Nullam dictum felis eu pede mollis pretium.</p>
                 </li>
             </ul>
-        </div>
-        <div>
-            <p>X: <span id="valX"></span></p>
-            <p>Y: <span id="valY"></span></p>
         </div>
     </body>
 </html>

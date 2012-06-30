@@ -148,6 +148,20 @@ Y.ScrollView = Y.extend(ScrollView, Y.Widget, {
         if (IE) {
             sv._fixIESelect(sv._bb, sv._cb);
         }
+
+
+        // this.on('gestureMoveEnd', function () {
+        //     console.log('gestureMoveEnd');
+
+        //     var sv = this,
+        //         isOOB =  sv._isOOB();
+            
+        //     if (isOOB) {
+        //         sv._afterOOB();
+        //     } else {
+        //         sv._scrollEnded();
+        //     }
+        // });
     },
 
     /**
@@ -261,7 +275,12 @@ Y.ScrollView = Y.extend(ScrollView, Y.Widget, {
      * @param duration {Number} Duration, in ms, of the scroll animation (default is 0)
      * @param easing {String} An easing equation if duration is set
      */
-    scrollTo: function(x, y, duration, easing, node) {
+    scrollTo: function(x, y, duration, easing) {
+        this._scrollTo.apply(this, arguments);
+    },
+
+    _scrollTo: function(x, y, duration, easing, node) {
+        console.log('_scrollTo: ', x, y);
         var sv = this;
 
         // TODO: Figure out a better way to detect mousewheel events
@@ -276,25 +295,25 @@ Y.ScrollView = Y.extend(ScrollView, Y.Widget, {
 
         if (!sv._cDisabled) {
             var cb = sv._cb,
-                node = Y.one('#content li') || cb,
+                node = node || cb,
                 xSet = (x !== null),
                 ySet = (y !== null),
                 xMove = (xSet) ? x * -1 : 0,
                 yMove = (ySet) ? y * -1 : 0,
                 transition,
                 TRANS = ScrollView._TRANSITION,
-                callback = this._boundScollEnded;
+                callback = this._boundScollEnded,
+                duration = duration || 0,
+                easing = easing || ScrollView.EASING;
 
-            duration = duration || 0;
-            easing = easing || ScrollView.EASING;
+            // Shouldn't set these values inside scrollTo
+            // if (xSet) {
+            //     this.set(SCROLL_X, x, { src: UI });
+            // }
 
-            if (xSet) {
-                this.set(SCROLL_X, x, { src: UI });
-            }
-
-            if (ySet) {
-                this.set(SCROLL_Y, y, { src: UI });
-            }
+            // if (ySet) {
+            //     this.set(SCROLL_Y, y, { src: UI });
+            // }
 
             if (NATIVE_TRANSITIONS) {
                 // ANDROID WORKAROUND - try and stop existing transition, before kicking off new one.
@@ -323,7 +342,9 @@ Y.ScrollView = Y.extend(ScrollView, Y.Widget, {
                 node.transition(transition, callback);
             } else {
                 if (NATIVE_TRANSITIONS) {
+
                     node.setStyle('transform', this._transform(xMove, yMove));
+
                 } else {
                     if (xSet) { node.setStyle(LEFT, xMove + PX); }
                     if (ySet) { node.setStyle(TOP, yMove + PX); }
@@ -430,6 +451,8 @@ Y.ScrollView = Y.extend(ScrollView, Y.Widget, {
                 startY: e.clientY + currentY,
                 endClientX: null,
                 endClientY: null,
+                deltaX: null,
+                deltaY: null,
 
                 // For flicks
                 flick: null,
@@ -490,8 +513,7 @@ Y.ScrollView = Y.extend(ScrollView, Y.Widget, {
             startClientX = gesture.startClientX,
             startClientY = gesture.startClientY,
             clientX = e.clientX,
-            clientY = e.clientY,
-            delta;
+            clientY = e.clientY;
         
         // Check to see if we're going vertical
         if (gesture.isVertical === null) {
@@ -501,13 +523,14 @@ Y.ScrollView = Y.extend(ScrollView, Y.Widget, {
         sv._isDragging = true;
         gesture.endClientX = clientX;
         gesture.endClientY = clientY;
+        gesture.deltaX = -(clientX - startX);
+        gesture.deltaY = -(clientY - startY);
 
         if (gesture.isVertical && axisY) {
-            delta = -(clientY - startY);
-            sv.set(SCROLL_Y, delta);
+            sv.set(SCROLL_Y, gesture.deltaY);
         }
         else if (axisX) {
-            sv.set(SCROLL_X, -(clientX - startX));
+            sv.set(SCROLL_X, gesture.deltaX);
         }
     },
 
@@ -519,6 +542,7 @@ Y.ScrollView = Y.extend(ScrollView, Y.Widget, {
      * @private
      */
     _onGestureMoveEnd: function(e) {
+
         if (this._prevent.end) {
             e.preventDefault();
         }
@@ -587,7 +611,7 @@ Y.ScrollView = Y.extend(ScrollView, Y.Widget, {
 
     _scrollEnded: function () {
         console.log('** _scrollEnded **');
-        this.fire(EV_SCROLL_FLICK);
+        this.fire(EV_SCROLL_END);
     },
 
     /**
@@ -599,6 +623,7 @@ Y.ScrollView = Y.extend(ScrollView, Y.Widget, {
      * @protected
      */
     _flick: function(e) {
+        console.log('_flick');
         var sv = this,
             gesture = sv._gesture,
             flick = e.flick;
@@ -918,25 +943,26 @@ Y.ScrollView = Y.extend(ScrollView, Y.Widget, {
      * @return {Number} The constrained value, if it exceeds min/max range
      */
     _setScroll : function(val, dim) {
-        if (this._cDisabled) {
-            val = Y.Attribute.INVALID_VALUE;
-        } else {
-            var bouncing = this._cachedBounce || this.get(BOUNCE),
-                range = ScrollView.BOUNCE_RANGE,
+        console.log('_setScroll');
+        // if (this._cDisabled) {
+        //     val = Y.Attribute.INVALID_VALUE;
+        // } else {
+        //     var bouncing = this._cachedBounce || this.get(BOUNCE),
+        //         range = ScrollView.BOUNCE_RANGE,
 
-                maxScroll = (dim == DIM_X) ? this._maxScrollX : this._maxScrollY,
+        //         maxScroll = (dim == DIM_X) ? this._maxScrollX : this._maxScrollY,
 
-                min = bouncing ? -range : 0,
-                max = bouncing ? maxScroll + range : maxScroll;
+        //         min = bouncing ? -range : 0,
+        //         max = bouncing ? maxScroll + range : maxScroll;
 
-            if(!bouncing || !this._isDragging) {
-                if(val < min) {
-                    val = min;
-                } else if(val > max) {
-                    val = max;
-                }
-            }
-        }
+        //     if(!bouncing || !this._isDragging) {
+        //         if(val < min) {
+        //             val = min;
+        //         } else if(val > max) {
+        //             val = max;
+        //         }
+        //     }
+        // }
 
         return val;
     },
