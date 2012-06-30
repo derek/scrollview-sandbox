@@ -22,7 +22,11 @@ var getClassName = Y.ClassNameManager.getClassName,
     CONTENT_BOX = "contentBox",
     SELECTOR = "selector",
     FLICK = "flick",
-    DRAG = "drag";
+    DRAG = "drag",
+
+    DIM_X = "x",
+    DIM_Y = "y",
+    AXIS = 'axis';
 
 /**
  * Scrollview plugin that adds support for paging
@@ -96,6 +100,10 @@ PaginatorPlugin.ATTRS = {
      */
     total: {
         value: 0
+    },
+
+    axis: {
+        value: 'x'
     }
 };
 
@@ -121,7 +129,7 @@ Y.extend(PaginatorPlugin, Y.Plugin.Base, {
             padding = config.padding || paginator.padding;
 
         this._cb = cb;
-        this.axis = config.axis;
+        this.set(AXIS, config.axis);
 
         paginator.padding = padding;
         paginator.optimizeMemory = optimizeMemory;
@@ -163,7 +171,7 @@ Y.extend(PaginatorPlugin, Y.Plugin.Base, {
             paginator.cards[i] = {
                 scrollX: 0,
                 scrollY: 0
-            }
+            };
         });
         bb.addClass(CLASS_PAGED);
         paginator.set(TOTAL, size);
@@ -178,7 +186,7 @@ Y.extend(PaginatorPlugin, Y.Plugin.Base, {
         * @protected
      */
     _afterHostUIDimensionsChange: function(e) {
-        var paginator = this
+        var paginator = this,
             pageNodes = paginator._getPageNodes();
 
         paginator.set(TOTAL, pageNodes.size());
@@ -190,12 +198,12 @@ Y.extend(PaginatorPlugin, Y.Plugin.Base, {
             host = paginator._host,
             gesture = host._gesture,
             index = paginator._cIndex,
-            isVertical;
+            axis;
 
         if (gesture !== undefined) {
-            isVertical = gesture.isVertical;
+            axis = gesture.axis;
 
-            if (isVertical) {
+            if (axis === DIM_Y) {
                 node = paginator.cards[index].node;
                 x = 0;
             }
@@ -207,7 +215,7 @@ Y.extend(PaginatorPlugin, Y.Plugin.Base, {
 
         host._scrollTo(x, y, duration, easing, node);
 
-        return paginator._prevent
+        return paginator._prevent;
     },
 
     _onGestureMoveStart: function(e){
@@ -239,28 +247,23 @@ Y.extend(PaginatorPlugin, Y.Plugin.Base, {
         var paginator = this,
             host = paginator._host,
             gesture = host._gesture,
-            isVertical = gesture.isVertical,
-            isForward = !isVertical ? gesture.startClientX > gesture.endClientX : gesture.startClientY > gesture.endClientY,
+            axis = gesture.axis,
+            isForward = (axis === DIM_X ? gesture.deltaX > 0 : gesture.deltaY > 0),
             index = paginator.get(INDEX),
             offsetY;
-
-        if (isVertical === null) {
-            return;
-        }
-        else if (isVertical === true) {
-            paginator.cards[index].scrollY -= e.clientY - paginator.cards[index]._prevY;
-            // Store previous y coordinate
-            paginator.cards[index]._prevY = e.clientY;
-        }
-
-        // is horizontal
-        else {
+            
+        if (axis === DIM_X) {
             if (isForward) {
                 paginator.next();
             }
             else {
                 paginator.prev();
             }
+        }
+        else if (axis === DIM_Y) {
+            paginator.cards[index].scrollY -= e.clientY - paginator.cards[index]._prevY;
+            // Store previous y coordinate
+            paginator.cards[index]._prevY = e.clientY;
         }
     },
 
@@ -308,6 +311,7 @@ Y.extend(PaginatorPlugin, Y.Plugin.Base, {
         var paginator = this,
             host = this._host,
             index = paginator.get(INDEX);
+
         // host.set('scrollY', paginator.cards[index].scrollY, {src: 'ui'});
 
         // paginator._optimize();
@@ -349,7 +353,6 @@ Y.extend(PaginatorPlugin, Y.Plugin.Base, {
         var paginator = this,
             host = paginator._host,
             optimizeMemory = paginator.optimizeMemory,
-            isVert = host._scrollsVertical,
             currentIndex = paginator.get(INDEX),
             pageNodes;
 
@@ -438,11 +441,11 @@ Y.extend(PaginatorPlugin, Y.Plugin.Base, {
             host = paginator._host,
             disabled = !paginator._uiEnabled;
 
-        if (disabled) {
-            // paginator._uiEnabled = true;
-            // host.set(FLICK, paginator._hostOriginalFlick);
-            // host.set(DRAG, paginator._hostOriginalDrag);
-        }
+        // if (disabled) {
+        //     // paginator._uiEnabled = true;
+        //     // host.set(FLICK, paginator._hostOriginalFlick);
+        //     // host.set(DRAG, paginator._hostOriginalDrag);
+        // }
     },
 
     /**
@@ -525,33 +528,31 @@ Y.extend(PaginatorPlugin, Y.Plugin.Base, {
 
         var paginator = this,
             host = paginator._host,
-            isVert = host.isVertical,
-            scrollAxis = (isVert) ? SCROLL_Y : SCROLL_X,
-            pageNodes = paginator._getPageNodes(),
-            startPoint = isVert ? host._startClientY : host._startClientX,
-            endPoint = isVert ? host._endClientY : host._endClientX,
-            delta = startPoint - endPoint,
+            axis = paginator.get(AXIS),
             duration = (duration !== undefined) ? duration : PaginatorPlugin.TRANSITION.duration,
             easing = (easing !== undefined) ? duration : PaginatorPlugin.TRANSITION.easing,
-            scrollVal;
+            pageNodes = paginator._getPageNodes(),
+            scrollAxis, scrollVal;
 
-        // If the delta is 0 (a no-movement mouseclick)
-        if (delta === 0) {
-            return false;
-        }
+        // // If the delta is 0 (a no-movement mouseclick)
+        // if (delta === 0) {
+        //     return false;
+        // }
 
-        // Disable the UI while animating
-        if (duration > 0) {
-            paginator._uiDisable();
-        }
+        // // Disable the UI while animating
+        // if (duration > 0) {
+        //     paginator._uiDisable();
+        // }
 
         // Make sure the target node is visible
-        paginator._showNodes(pageNodes.item(index));
+        // paginator._showNodes(pageNodes.item(index));
 
         // Determine where to scroll to
-        if (isVert) {
+        if (axis === DIM_Y) {
+            scrollAxis = SCROLL_Y;
             scrollVal = pageNodes.item(index).get("offsetTop");
         } else {
+            scrollAxis = SCROLL_X;
             scrollVal = pageNodes.item(index).get("offsetLeft");
         }
 

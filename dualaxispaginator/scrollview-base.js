@@ -234,7 +234,7 @@ Y.ScrollView = Y.extend(ScrollView, Y.Widget, {
         sv._bindMousewheel(MOUSEWHEEL_ENABLED);
         sv.scrollTo(sv.get(SCROLL_X), sv.get(SCROLL_Y));
     },
-    
+
     /**
      * Utility method to obtain scrollWidth, scrollHeight,
      * accounting for the impact of translate on scrollWidth, scrollHeight
@@ -420,7 +420,6 @@ Y.ScrollView = Y.extend(ScrollView, Y.Widget, {
     },
 
     _scrollTo: function(x, y, duration, easing, node) {
-        // console.log('_scrollTo: ', x, y);
         var sv = this;
 
         // TODO: Figure out a better way to detect mousewheel events
@@ -567,24 +566,33 @@ Y.ScrollView = Y.extend(ScrollView, Y.Widget, {
      */
     _onGestureMoveStart: function(e) {
 
-        if (this._prevent.start) {
-            e.preventDefault();
-        }
-
         if (!this._cDisabled) {
             var sv = this,
                 bb = sv._bb,
                 currentX = sv.get(SCROLL_X),
                 currentY = sv.get(SCROLL_Y);
 
+
+            if (sv._prevent.start) {
+                e.preventDefault();
+            }
+
             sv._gesture = {
-                isVertical: null,
+                axis: null,
+
+                // The current attribute values
+                startX: currentX,
+                startY: currentY,
+
+                // The X/Y coordinates where the event began
                 startClientX: e.clientX,
                 startClientY: e.clientY,
-                startX: e.clientX + currentX,
-                startY: e.clientY + currentY,
+
+                // The X/Y coordinates where the event will end
                 endClientX: null,
                 endClientY: null,
+
+                // The current delta of the event
                 deltaX: null,
                 deltaY: null,
 
@@ -607,36 +615,34 @@ Y.ScrollView = Y.extend(ScrollView, Y.Widget, {
      */
     _onGestureMove: function(e) {
 
-        if (this._prevent.move) {
-            e.preventDefault();
-        }
-
         var sv = this,
-            axisX = sv.get(AXIS_X),
-            axisY = sv.get(AXIS_Y),
             gesture = sv._gesture,
             startX = gesture.startX,
             startY = gesture.startY,
             startClientX = gesture.startClientX,
             startClientY = gesture.startClientY,
             clientX = e.clientX,
-            clientY = e.clientY;
+            clientY = e.clientY,
+            newX, newY;
+
+        if (sv._prevent.move) {
+            e.preventDefault();
+        }
+
+        gesture.deltaX = startClientX - clientX;
+        gesture.deltaY = startClientY - clientY;
         
-        // Check to see if we're going vertical
-        if (gesture.isVertical === null) {
-            gesture.isVertical = (Math.abs(e.clientX - startClientX) < Math.abs(e.clientY - startClientY));
+        if (gesture.axis === null) {
+            gesture.axis = (Math.abs(gesture.deltaX) > Math.abs(gesture.deltaY)) ? DIM_X : DIM_Y;
         }
 
-        gesture.endClientX = clientX;
-        gesture.endClientY = clientY;
-        gesture.deltaX = -(clientX - startX);
-        gesture.deltaY = -(clientY - startY);
-
-        if (gesture.isVertical && axisY) {
-            sv.set(SCROLL_Y, gesture.deltaY);
+        if (gesture.axis == DIM_X) {
+            newX = startX + gesture.deltaX;
+            sv.set(SCROLL_X, newX);
         }
-        else if (axisX) {
-            sv.set(SCROLL_X, gesture.deltaX);
+        else {
+            newY = startY + gesture.deltaY;
+            sv.set(SCROLL_Y, newY);
         }
     },
 
@@ -649,14 +655,20 @@ Y.ScrollView = Y.extend(ScrollView, Y.Widget, {
      */
     _onGestureMoveEnd: function(e) {
 
-        if (this._prevent.end) {
-            e.preventDefault();
-        }
-
         var sv = this,
             gesture = sv._gesture,
             flick = gesture.flick,
+            clientX = e.clientX,
+            clientY = e.clientY,
             isOOB;
+
+        if (sv._prevent.end) {
+            e.preventDefault();
+        }
+
+
+        gesture.endClientX = clientX;
+        gesture.endClientY = clientY;
 
         gesture.onGestureMove.detach();
         gesture.onGestureMoveEnd.detach();
@@ -712,7 +724,7 @@ Y.ScrollView = Y.extend(ScrollView, Y.Widget, {
 
         var sv = this,
             gesture = sv._gesture,
-            isVertical = gesture.flick.axis === "y",
+            axis = gesture.flick.axis,
             currentX = sv.get(SCROLL_X),
             currentY = sv.get(SCROLL_Y),
             minX = sv._minScrollX,
@@ -739,18 +751,18 @@ Y.ScrollView = Y.extend(ScrollView, Y.Widget, {
             sv._onTransEnd();
             return;
         }
-        else if (isVertical && axisY) {
+        else if (axis === DIM_X && axisX) {
+            if (newX < minX || newX > maxX) {
+                velocity *= bounce;
+            }
+            sv.set(SCROLL_X, newX);
+        }
+        else if (axis === DIM_Y && axisY) {
             if (newY < minY || newY > maxY) {
                 velocity *= bounce;
             }
 
             sv.set(SCROLL_Y, newY);
-        }
-        else if (!isVertical && axisX) {
-            if (newX < minX || newX > maxX) {
-                velocity *= bounce;
-            }
-            sv.set(SCROLL_X, newX);
         }
 
         Y.later(step, sv, '_flickFrame', [velocity]);
