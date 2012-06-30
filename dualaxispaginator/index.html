@@ -84,9 +84,11 @@
                 Y.one('#valY').set('innerHTML', y);
             });
 
-            // scrollview.pages.after('indexChange', function(e){
-            //     Y.one('#valIndex').set('innerHTML', e.newVal);
-            // });
+            if (scrollview.pages) {
+                scrollview.pages.after('indexChange', function(e){
+                    Y.one('#valIndex').set('innerHTML', e.newVal);
+                });
+            }
             
             s = scrollview;
             

@@ -152,7 +152,7 @@ Y.extend(PaginatorPlugin, Y.Plugin.Base, {
         * @protected
      */
     _afterHostRender: function (e) {
-        console.log('_afterHostRender');
+        // console.log('_afterHostRender');
         var paginator = this,
             host = paginator._host,
             pageNodes = paginator._getPageNodes(),
@@ -185,7 +185,7 @@ Y.extend(PaginatorPlugin, Y.Plugin.Base, {
     },
 
     _onScrollTo: function (x, y, duration, easing, node) {
-        console.log('_onScrollTo: ', x, y);
+        // console.log('_onScrollTo: ', x, y);
         var paginator = this,
             host = paginator._host,
             gesture = host._gesture,
@@ -303,7 +303,7 @@ Y.extend(PaginatorPlugin, Y.Plugin.Base, {
         * @protected
      */
     _scrollEnded: function (e) {
-        console.log('paginator:_scrollEnded');
+        // console.log('paginator:_scrollEnded');
         
         var paginator = this,
             host = this._host,
@@ -322,7 +322,7 @@ Y.extend(PaginatorPlugin, Y.Plugin.Base, {
         * @protected
      */
     _afterIndexChange: function (e) {
-        console.log('paginator:_afterIndexChange');
+        // console.log('paginator:_afterIndexChange');
         
         var paginator = this,
             host = this._host,
