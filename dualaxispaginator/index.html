@@ -68,13 +68,13 @@
                     minVelocity:0.3,
                     axis: 'y'
                 },
-                // plugins: [{
-                //     fn:Y.Plugin.ScrollViewPaginator,
-                //     cfg:{
-                //         axis: 'x',
-                //         selector:">ul>li"
-                //     }
-                // }],
+                plugins: [{
+                    fn:Y.Plugin.ScrollViewPaginator,
+                    cfg:{
+                        axis: 'x',
+                        selector:">ul>li"
+                    }
+                }],
             }).render();
 
             scrollview.after(['scrollXChange', 'scrollYChange'], function(){

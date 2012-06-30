@@ -4,7 +4,6 @@
 /*
     todo: 
     - cleanup mousewheel code
-    - 
 */
 
 /**
@@ -148,20 +147,6 @@ Y.ScrollView = Y.extend(ScrollView, Y.Widget, {
         if (IE) {
             sv._fixIESelect(sv._bb, sv._cb);
         }
-
-
-        // this.on('gestureMoveEnd', function () {
-        //     console.log('gestureMoveEnd');
-
-        //     var sv = this,
-        //         isOOB =  sv._isOOB();
-            
-        //     if (isOOB) {
-        //         sv._afterOOB();
-        //     } else {
-        //         sv._scrollEnded();
-        //     }
-        // });
     },
 
     /**
@@ -276,6 +261,8 @@ Y.ScrollView = Y.extend(ScrollView, Y.Widget, {
      * @param easing {String} An easing equation if duration is set
      */
     scrollTo: function(x, y, duration, easing) {
+
+        // Maps to a private method to allow for easy overriding
         this._scrollTo.apply(this, arguments);
     },
 
@@ -606,7 +593,9 @@ Y.ScrollView = Y.extend(ScrollView, Y.Widget, {
             duration = duration || 400,
             easing = easing || ScrollView.SNAP_EASING;
 
-        this.scrollTo(x, y, duration, easing);
+        sv.set(SCROLL_X, x, {src: 'ui'});
+        sv.set(SCROLL_Y, y, {src: 'ui'});
+        sv.scrollTo(x, y, duration, easing);
     },
 
     _scrollEnded: function () {
@@ -686,7 +675,7 @@ Y.ScrollView = Y.extend(ScrollView, Y.Widget, {
             if (newY < minY || newY > maxY) {
                 velocity *= bounce;
             }
-
+console.log(newY);
             sv.set(SCROLL_Y, newY);
         }
         else if (!isVertical && axisX) {
@@ -940,29 +929,11 @@ Y.ScrollView = Y.extend(ScrollView, Y.Widget, {
      * @param {Number} val
      * @param {String} dim
      *
-     * @return {Number} The constrained value, if it exceeds min/max range
+     * @return {Number}
      */
     _setScroll : function(val, dim) {
-        console.log('_setScroll');
-        // if (this._cDisabled) {
-        //     val = Y.Attribute.INVALID_VALUE;
-        // } else {
-        //     var bouncing = this._cachedBounce || this.get(BOUNCE),
-        //         range = ScrollView.BOUNCE_RANGE,
-
-        //         maxScroll = (dim == DIM_X) ? this._maxScrollX : this._maxScrollY,
-
-        //         min = bouncing ? -range : 0,
-        //         max = bouncing ? maxScroll + range : maxScroll;
-
-        //     if(!bouncing || !this._isDragging) {
-        //         if(val < min) {
-        //             val = min;
-        //         } else if(val > max) {
-        //             val = max;
-        //         }
-        //     }
-        // }
+        
+        // There used to be stuff here.
 
         return val;
     },

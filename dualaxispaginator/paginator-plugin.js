@@ -221,7 +221,7 @@ Y.extend(PaginatorPlugin, Y.Plugin.Base, {
         // Store the mouse starting point (e.clientY) for this gesture
         paginator.cards[index]._prevY = e.clientY;
         paginator.cards[index].node = cardNode;
-        
+
         host._maxScrollY = cardNode.get('scrollHeight')-host.get('height');
 
     },
@@ -308,6 +308,7 @@ Y.extend(PaginatorPlugin, Y.Plugin.Base, {
         var paginator = this,
             host = this._host,
             index = paginator.get(INDEX);
+        // host.set('scrollY', paginator.cards[index].scrollY, {src: 'ui'});
 
         // paginator._optimize();
         this._uiEnable();
@@ -325,16 +326,16 @@ Y.extend(PaginatorPlugin, Y.Plugin.Base, {
         
         var paginator = this,
             host = this._host,
-            newVal = e.newVal;
+            index = e.newVal;
 
         // console.log('set scrollY to ', paginator.cards[newVal].scrollY);
-        // host.set('scrollY', paginator.cards[newVal].scrollY, {src: 'paginator'});
+        host.set('scrollY', paginator.cards[index].scrollY, {src: 'ui'});
 
         // Cache the index value
-        paginator._cIndex = newVal;
+        paginator._cIndex = index;
 
         if(e.src !== UI) {
-            paginator.scrollToIndex(newVal);
+            paginator.scrollToIndex(index);
         }
     },
 
