@@ -102,6 +102,7 @@ PaginatorPlugin.ATTRS = {
         value: 0
     },
 
+    // TODO
     axis: {
         value: 'x'
     }
@@ -124,31 +125,27 @@ Y.extend(PaginatorPlugin, Y.Plugin.Base, {
     initializer: function (config) {
         var paginator = this,
             host = paginator.get(HOST),
+            bb = host.get(BOUNDING_BOX),
             cb = host.get(CONTENT_BOX),
             optimizeMemory = config.optimizeMemory || paginator.optimizeMemory,
             padding = config.padding || paginator.padding;
 
-        this._cb = cb;
-        this.set(AXIS, config.axis);
+        paginator.set(AXIS, config.axis);
+
+        paginator._bb = bb;
+        paginator._cb = cb;
+        paginator._host = host;
 
         paginator.padding = padding;
         paginator.optimizeMemory = optimizeMemory;
-        paginator._host = host;
-        paginator._hostOriginalFlick = host.get(FLICK);
-        paginator._hostOriginalDrag = host.get(DRAG);
 
         paginator.afterHostMethod('_onGestureMoveStart', paginator._onGestureMoveStart);
         paginator.afterHostMethod('_onGestureMoveEnd', paginator._onGestureMoveEnd);
         paginator.beforeHostMethod('scrollTo', paginator._onScrollTo);
-
         paginator.beforeHostMethod('_mousewheel', paginator._mousewheel);
-
         paginator.afterHostMethod('_uiDimensionsChange', paginator._afterHostUIDimensionsChange);
-        
         paginator.afterHostEvent('render', paginator._afterHostRender);
         paginator.afterHostEvent('scrollEnd', paginator._scrollEnded);
-
-        // On instead of After because we want to detect same value updates
         paginator.after('indexChange', paginator._afterIndexChange);
     },
 
@@ -163,16 +160,25 @@ Y.extend(PaginatorPlugin, Y.Plugin.Base, {
         // console.log('_afterHostRender');
         var paginator = this,
             host = paginator._host,
+            bb = paginator._bb,
             pageNodes = paginator._getPageNodes(),
             size = pageNodes.size(),
-            bb = host.get(BOUNDING_BOX);
+            widgetHeight = host.get('height'),
+            scrollHeight;
 
         pageNodes.each(function(node, i){
+
+            scrollHeight = node.get('scrollHeight');
+
             paginator.cards[i] = {
+                maxScrollY: scrollHeight - widgetHeight,
+                node: node,
                 scrollX: 0,
                 scrollY: 0
             };
+
         });
+
         bb.addClass(CLASS_PAGED);
         paginator.set(TOTAL, size);
         paginator._optimize();
@@ -183,13 +189,14 @@ Y.extend(PaginatorPlugin, Y.Plugin.Base, {
      *
      * @method _afterHostUIDimensionsChange
      * @param {Event.Facade}
-        * @protected
+     * @protected
      */
     _afterHostUIDimensionsChange: function(e) {
         var paginator = this,
-            pageNodes = paginator._getPageNodes();
+            pageNodes = paginator._getPageNodes(),
+            size = pageNodes.size();
 
-        paginator.set(TOTAL, pageNodes.size());
+        paginator.set(TOTAL, size);
     },
 
     _onScrollTo: function (x, y, duration, easing, node) {
@@ -219,19 +226,14 @@ Y.extend(PaginatorPlugin, Y.Plugin.Base, {
     },
 
     _onGestureMoveStart: function(e){
+
         var paginator = this,
             host = paginator._host,
-            gesture = host._gesture,
-            index = paginator.get(INDEX),
-            pageNodes = paginator._getPageNodes(),
-            cardNode = pageNodes.item(index);
+            index = paginator._cIndex,
+            maxScrollY = paginator.cards[index].maxScrollY;
 
-        // Store the mouse starting point (e.clientY) for this gesture
-        paginator.cards[index]._prevY = e.clientY;
-        paginator.cards[index].node = cardNode;
-
-        host._maxScrollY = cardNode.get('scrollHeight')-host.get('height');
-
+        // Set the max height base can scroll to
+        host._maxScrollY = maxScrollY;
     },
 
     /**
@@ -252,6 +254,8 @@ Y.extend(PaginatorPlugin, Y.Plugin.Base, {
             index = paginator.get(INDEX),
             offsetY;
 
+        paginator._uiDisable();
+
         if (axis === DIM_X) {
             if (isForward) {
                 paginator.next();
@@ -261,9 +265,7 @@ Y.extend(PaginatorPlugin, Y.Plugin.Base, {
             }
         }
         else if (axis === DIM_Y) {
-            paginator.cards[index].scrollY -= e.clientY - paginator.cards[index]._prevY;
-            // Store previous y coordinate
-            paginator.cards[index]._prevY = e.clientY;
+            paginator.cards[index].scrollY -= gesture.deltaY;
         }
     },
 
@@ -282,7 +284,7 @@ Y.extend(PaginatorPlugin, Y.Plugin.Base, {
             isForward = e.wheelDelta < 0, // down (negative) is forward.  @TODO Should revisit.
             axis = paginator.get(AXIS);
 
-        // Only if the mousewheel event occurred on a DOM node inside the CB
+        // Only if the mousewheel event occurred on a DOM node inside the BB
         if (bb.contains(e.target) && axis === DIM_Y){
             if (isForward) {
                 paginator.next();
@@ -312,11 +314,11 @@ Y.extend(PaginatorPlugin, Y.Plugin.Base, {
         var paginator = this,
             host = this._host,
             index = paginator.get(INDEX);
-        
+
         paginator.cards[index].scrollY = host.get('scrollY');
 
         // paginator._optimize();
-        this._uiEnable();
+        paginator._uiEnable();
     },
 
     /**
@@ -438,15 +440,9 @@ Y.extend(PaginatorPlugin, Y.Plugin.Base, {
      * @protected
      */
     _uiEnable: function () {
-        var paginator = this,
-            host = paginator._host,
-            disabled = !paginator._uiEnabled;
-
-        // if (disabled) {
-        //     // paginator._uiEnabled = true;
-        //     // host.set(FLICK, paginator._hostOriginalFlick);
-        //     // host.set(DRAG, paginator._hostOriginalDrag);
-        // }
+        var paginator = this;
+console.log('_uiEnable');
+        paginator._uiEnabled = true;
     },
 
     /**
@@ -456,12 +452,10 @@ Y.extend(PaginatorPlugin, Y.Plugin.Base, {
      * @protected
      */
     _uiDisable: function () {
-        var paginator = this,
-            host = paginator._host;
+        var paginator = this;
 
-        // paginator._uiEnabled = false;
-        // host.set(FLICK, false);
-        // host.set(DRAG, false);
+console.log('_uiDisable');
+        paginator._uiEnabled = false;
     },
 
     /**
@@ -491,9 +485,7 @@ Y.extend(PaginatorPlugin, Y.Plugin.Base, {
             index = paginator.get(INDEX),
             target = index + 1;
 
-        if(paginator._uiEnabled) {
-            paginator.set(INDEX, target);
-        }
+        paginator.set(INDEX, target);
     },
 
     /**
@@ -505,12 +497,12 @@ Y.extend(PaginatorPlugin, Y.Plugin.Base, {
         var paginator = this,
             index = paginator.get(INDEX),
             target = index - 1;
+
         if (target < 0) {
             target = 0;
         }
-        if(paginator._uiEnabled) {
-            paginator.set(INDEX, target);
-        }
+        
+        paginator.set(INDEX, target);
     },
 
     scrollTo: function () {
