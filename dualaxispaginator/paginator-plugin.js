@@ -251,7 +251,7 @@ Y.extend(PaginatorPlugin, Y.Plugin.Base, {
             isForward = (axis === DIM_X ? gesture.deltaX > 0 : gesture.deltaY > 0),
             index = paginator.get(INDEX),
             offsetY;
-            
+
         if (axis === DIM_X) {
             if (isForward) {
                 paginator.next();
@@ -273,16 +273,17 @@ Y.extend(PaginatorPlugin, Y.Plugin.Base, {
      *
      * @method _mousewheel
      * @param {Event.Facade}
-        * @protected
+     * @protected
      */
     _mousewheel: function (e) {
         var paginator = this,
             host = paginator._host,
+            bb = host._bb,
             isForward = e.wheelDelta < 0, // down (negative) is forward.  @TODO Should revisit.
-            cb = this._cb;
+            axis = paginator.get(AXIS);
 
         // Only if the mousewheel event occurred on a DOM node inside the CB
-        if (cb.contains(e.target)){
+        if (bb.contains(e.target) && axis === DIM_Y){
             if (isForward) {
                 paginator.next();
             }
@@ -311,8 +312,8 @@ Y.extend(PaginatorPlugin, Y.Plugin.Base, {
         var paginator = this,
             host = this._host,
             index = paginator.get(INDEX);
-
-        // host.set('scrollY', paginator.cards[index].scrollY, {src: 'ui'});
+        
+        paginator.cards[index].scrollY = host.get('scrollY');
 
         // paginator._optimize();
         this._uiEnable();

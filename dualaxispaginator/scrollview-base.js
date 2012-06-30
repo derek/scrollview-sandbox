@@ -1,11 +1,6 @@
 /*jslint nomen:true sloppy:true white:true*/
 /*global Y, YUI, document*/
 
-/*
-    todo: 
-    - cleanup mousewheel code
-*/
-
 /**
  * The scrollview-base module provides a basic ScrollView Widget, without scrollbar indicators
  *
@@ -420,75 +415,67 @@ Y.ScrollView = Y.extend(ScrollView, Y.Widget, {
     },
 
     _scrollTo: function(x, y, duration, easing, node) {
-        var sv = this;
-
-        // TODO: Figure out a better way to detect mousewheel events
-        if (easing === undefined) {
-            if ( y < sv._minScrollY) {
-                y = sv._minScrollY;
-            }
-            else if ( y > sv._maxScrollY) {
-                y = sv._maxScrollY;
-            }
+        
+        if (this._cDisabled) {
+            return;
         }
 
-        if (!sv._cDisabled) {
-            var cb = sv._cb,
-                node = node || cb,
-                xSet = (x !== null),
-                ySet = (y !== null),
-                xMove = (xSet) ? x * -1 : 0,
-                yMove = (ySet) ? y * -1 : 0,
-                transition,
-                TRANS = ScrollView._TRANSITION,
-                callback = this._boundScollEnded,
-                duration = duration || 0,
-                easing = easing || ScrollView.EASING;
+        var sv = this,
+            cb = sv._cb,
+            node = node || cb,
+            xSet = (x !== null),
+            ySet = (y !== null),
+            xMove = (xSet) ? x * -1 : 0,
+            yMove = (ySet) ? y * -1 : 0,
+            transition,
+            TRANS = ScrollView._TRANSITION,
+            callback = this._boundScollEnded,
+            duration = duration || 0,
+            easing = easing || ScrollView.EASING;
 
-            // Shouldn't set these values inside scrollTo
-            // if (xSet) {
-            //     this.set(SCROLL_X, x, { src: UI });
-            // }
+        // Shouldn't set these values inside scrollTo
+        // if (xSet) {
+        //     this.set(SCROLL_X, x, { src: UI });
+        // }
 
-            // if (ySet) {
-            //     this.set(SCROLL_Y, y, { src: UI });
-            // }
+        // if (ySet) {
+        //     this.set(SCROLL_Y, y, { src: UI });
+        // }
+
+        if (NATIVE_TRANSITIONS) {
+            // ANDROID WORKAROUND - try and stop existing transition, before kicking off new one.
+            node.setStyle(TRANS.DURATION, ZERO).setStyle(TRANS.PROPERTY, EMPTY);
+        }
+
+        if (duration !== 0) {
+            transition = {
+                easing : easing,
+                duration : duration/1000
+            };
 
             if (NATIVE_TRANSITIONS) {
-                // ANDROID WORKAROUND - try and stop existing transition, before kicking off new one.
-                node.setStyle(TRANS.DURATION, ZERO).setStyle(TRANS.PROPERTY, EMPTY);
+                transition.transform = this._transform(xMove, yMove);
+            } else {
+                if (xSet) { transition.left = xMove + PX; }
+                if (ySet) { transition.top = yMove + PX; }
             }
 
-            if (duration !== 0) {
-                transition = {
-                    easing : easing,
-                    duration : duration/1000
-                };
+            if (!callback) {
+                callback = this._boundScollEnded = Y.bind(this._onTransEnd, this);
+            }
 
-                if (NATIVE_TRANSITIONS) {
-                    transition.transform = this._transform(xMove, yMove);
-                } else {
-                    if (xSet) { transition.left = xMove + PX; }
-                    if (ySet) { transition.top = yMove + PX; }
-                }
+            node.transition(transition, callback);
+        } else {
 
-                if (!callback) {
-                    callback = this._boundScollEnded = Y.bind(this._onTransEnd, this);
-                }
+            // TODO: Should use _moveTo()
 
-                node.transition(transition, callback);
+            if (NATIVE_TRANSITIONS) {
+
+                node.setStyle('transform', this._transform(xMove, yMove));
+
             } else {
-
-                // TODO: Should use _moveTo()
-
-                if (NATIVE_TRANSITIONS) {
-
-                    node.setStyle('transform', this._transform(xMove, yMove));
-
-                } else {
-                    if (xSet) { node.setStyle(LEFT, xMove + PX); }
-                    if (ySet) { node.setStyle(TOP, yMove + PX); }
-                }
+                if (xSet) { node.setStyle(LEFT, xMove + PX); }
+                if (ySet) { node.setStyle(TOP, yMove + PX); }
             }
         }
     },
@@ -631,7 +618,7 @@ Y.ScrollView = Y.extend(ScrollView, Y.Widget, {
 
         gesture.deltaX = startClientX - clientX;
         gesture.deltaY = startClientY - clientY;
-        
+
         if (gesture.axis === null) {
             gesture.axis = (Math.abs(gesture.deltaX) > Math.abs(gesture.deltaY)) ? DIM_X : DIM_Y;
         }
@@ -772,21 +759,24 @@ Y.ScrollView = Y.extend(ScrollView, Y.Widget, {
     _mousewheel: function(e) {
         var sv = this,
             scrollY = sv.get(SCROLL_Y),
-            boundingBox = sv._bb,
-            contentBox = sv._cb,
+            bb = sv._bb,
             scrollOffset = 10, // 10px
             scrollToY = scrollY - (e.wheelDelta * scrollOffset);
 
-        if (boundingBox.contains(e.target)){
-            sv.scrollTo(0, scrollToY);
+        if (bb.contains(e.target)){
 
-            // if we have scrollbars plugin, update & set the flash timer on the scrollbar
-            if (sv.scrollbars) {
-                // TODO: The scrollbars should handle this themselves
-                sv.scrollbars._update();
-                sv.scrollbars.flash();
-                // or just this
-                // sv.scrollbars._hostDimensionsChange();
+            if (scrollToY >= sv._minScrollY && scrollToY <= sv._maxScrollY) {
+                sv.set(SCROLL_Y, scrollToY);
+
+                // if we have scrollbars plugin, update & set the flash timer on the scrollbar
+                // TODO: This probably shouldn't be in this module
+                if (sv.scrollbars) {
+                    // TODO: The scrollbars should handle this themselves
+                    sv.scrollbars._update();
+                    sv.scrollbars.flash();
+                    // or just this
+                    // sv.scrollbars._hostDimensionsChange();
+                }
             }
 
             // prevent browser default behavior on mouse scroll
