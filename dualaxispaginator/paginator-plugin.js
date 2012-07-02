@@ -110,7 +110,7 @@ PaginatorPlugin.ATTRS = {
 
 Y.extend(PaginatorPlugin, Y.Plugin.Base, {
 
-    optimizeMemory: false,
+    optimizeMemory: true,
     padding: 1,
     _uiEnabled: true,
     _prevent: new Y.Do.Prevent(),
@@ -317,7 +317,7 @@ Y.extend(PaginatorPlugin, Y.Plugin.Base, {
 
         paginator.cards[index].scrollY = host.get('scrollY');
 
-        // paginator._optimize();
+        paginator._optimize();
         paginator._uiEnable();
     },
 
@@ -364,10 +364,10 @@ Y.extend(PaginatorPlugin, Y.Plugin.Base, {
         }
 
         // Show the pages in/near the viewport & hide the rest
-        pageNodes = paginator._getStage(currentIndex);
-        paginator._showNodes(pageNodes.visible);
-        paginator._hideNodes(pageNodes.hidden);
-        // paginator.scrollToIndex(currentIndex, 0);
+        // pageNodes = paginator._getStage(currentIndex);
+        // paginator._showNodes(pageNodes.visible);
+        // paginator._hideNodes(pageNodes.hidden);
+        // host.scrollTo(currentIndex, 0);
     },
 
     /**
@@ -441,7 +441,7 @@ Y.extend(PaginatorPlugin, Y.Plugin.Base, {
      */
     _uiEnable: function () {
         var paginator = this;
-console.log('_uiEnable');
+// console.log('_uiEnable');
         paginator._uiEnabled = true;
     },
 
@@ -454,7 +454,7 @@ console.log('_uiEnable');
     _uiDisable: function () {
         var paginator = this;
 
-console.log('_uiDisable');
+// console.log('_uiDisable');
         paginator._uiEnabled = false;
     },
 
@@ -505,6 +505,7 @@ console.log('_uiDisable');
         paginator.set(INDEX, target);
     },
 
+    // For backwards compatibility
     scrollTo: function () {
         return this.scrollToIndex.apply(this, arguments);
     },
@@ -548,7 +549,7 @@ console.log('_uiDisable');
             scrollAxis = SCROLL_X;
             scrollVal = pageNodes.item(index).get("offsetLeft");
         }
-
+        
         host.set(scrollAxis, scrollVal, {
             duration: duration,
             easing: easing

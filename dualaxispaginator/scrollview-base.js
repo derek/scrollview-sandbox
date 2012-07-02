@@ -556,9 +556,13 @@ Y.ScrollView = Y.extend(ScrollView, Y.Widget, {
         if (!this._cDisabled) {
             var sv = this,
                 bb = sv._bb,
+                axisX = sv.get(AXIS_X),
+                axisY = sv.get(AXIS_Y);
                 currentX = sv.get(SCROLL_X),
                 currentY = sv.get(SCROLL_Y);
 
+            sv._cAxisX = axisX;
+            sv._cAxisY = axisY;
 
             if (sv._prevent.start) {
                 e.preventDefault();
@@ -604,6 +608,8 @@ Y.ScrollView = Y.extend(ScrollView, Y.Widget, {
 
         var sv = this,
             gesture = sv._gesture,
+            axisX = sv._cAxisX,
+            axisY = sv._cAxisY,
             startX = gesture.startX,
             startY = gesture.startY,
             startClientX = gesture.startClientX,
@@ -623,11 +629,12 @@ Y.ScrollView = Y.extend(ScrollView, Y.Widget, {
             gesture.axis = (Math.abs(gesture.deltaX) > Math.abs(gesture.deltaY)) ? DIM_X : DIM_Y;
         }
 
-        if (gesture.axis == DIM_X) {
+        if (gesture.axis == DIM_X && sv._cAxisX) {
             newX = startX + gesture.deltaX;
             sv.set(SCROLL_X, newX);
         }
-        else {
+
+        if (gesture.axis == DIM_Y && sv._cAxisY) {
             newY = startY + gesture.deltaY;
             sv.set(SCROLL_Y, newY);
         }
@@ -652,8 +659,7 @@ Y.ScrollView = Y.extend(ScrollView, Y.Widget, {
         if (sv._prevent.end) {
             e.preventDefault();
         }
-
-
+        
         gesture.endClientX = clientX;
         gesture.endClientY = clientY;
 
@@ -668,8 +674,6 @@ Y.ScrollView = Y.extend(ScrollView, Y.Widget, {
                 sv._onTransEnd();    
             }
         }
-
-        return;
     },
 
     /**
