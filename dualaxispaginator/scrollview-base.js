@@ -389,14 +389,15 @@ Y.ScrollView = Y.extend(ScrollView, Y.Widget, {
     },
 
     // TODO
-    _animateTo: function (x, y, duration, easing) {
+    _animateTo: function (x, y, duration, easing, node) {
         var sv = this,
+            node = node || sv._cb,
             duration = duration || ScrollView.SNAP_DURATION,
             easing = easing || ScrollView.SNAP_EASING;
 
         sv.set(SCROLL_X, x, {src: 'ui'});
         sv.set(SCROLL_Y, y, {src: 'ui'});
-        sv.scrollTo(x, y, duration, easing);
+        sv.scrollTo(x, y, duration, easing, node);
     },
 
     /**
@@ -427,20 +428,11 @@ Y.ScrollView = Y.extend(ScrollView, Y.Widget, {
             ySet = (y !== null),
             xMove = (xSet) ? x * -1 : 0,
             yMove = (ySet) ? y * -1 : 0,
-            transition,
             TRANS = ScrollView._TRANSITION,
-            callback = this._boundScollEnded,
+            callback = sv._boundScollEnded,
             duration = duration || 0,
-            easing = easing || ScrollView.EASING;
-
-        // Shouldn't set these values inside scrollTo
-        // if (xSet) {
-        //     this.set(SCROLL_X, x, { src: UI });
-        // }
-
-        // if (ySet) {
-        //     this.set(SCROLL_Y, y, { src: UI });
-        // }
+            easing = easing || ScrollView.EASING,
+            transition;
 
         if (NATIVE_TRANSITIONS) {
             // ANDROID WORKAROUND - try and stop existing transition, before kicking off new one.
@@ -466,17 +458,7 @@ Y.ScrollView = Y.extend(ScrollView, Y.Widget, {
 
             node.transition(transition, callback);
         } else {
-
-            // TODO: Should use _moveTo()
-
-            if (NATIVE_TRANSITIONS) {
-
-                node.setStyle('transform', this._transform(xMove, yMove));
-
-            } else {
-                if (xSet) { node.setStyle(LEFT, xMove + PX); }
-                if (ySet) { node.setStyle(TOP, yMove + PX); }
-            }
+            sv._moveTo(node, xMove, yMove);
         }
     },
 
@@ -659,7 +641,7 @@ Y.ScrollView = Y.extend(ScrollView, Y.Widget, {
         if (sv._prevent.end) {
             e.preventDefault();
         }
-        
+
         gesture.endClientX = clientX;
         gesture.endClientY = clientY;
 

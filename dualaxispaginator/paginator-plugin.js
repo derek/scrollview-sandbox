@@ -163,15 +163,19 @@ Y.extend(PaginatorPlugin, Y.Plugin.Base, {
             bb = paginator._bb,
             pageNodes = paginator._getPageNodes(),
             size = pageNodes.size(),
-            widgetHeight = host.get('height'),
-            scrollHeight;
+            widgetHeight = bb.get('offsetHeight');
 
         pageNodes.each(function(node, i){
 
-            scrollHeight = node.get('scrollHeight');
+            var scrollHeight = node.get('scrollHeight'),
+                maxScrollY = scrollHeight - widgetHeight
+
+            if (maxScrollY < 0) {
+                maxScrollY = 0;
+            } 
 
             paginator.cards[i] = {
-                maxScrollY: scrollHeight - widgetHeight,
+                maxScrollY: maxScrollY,
                 node: node,
                 scrollX: 0,
                 scrollY: 0

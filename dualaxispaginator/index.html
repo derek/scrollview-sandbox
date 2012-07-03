@@ -63,18 +63,20 @@
                 srcNode:"#content",
                 width:400,
                 height:300,
+                axisX: true,
+                axisY: true,
                 flick: {
                     minDistance:10,
                     minVelocity:0.3,
                     axis: 'y'
                 },
-                // plugins: [{
-                //     fn:Y.Plugin.ScrollViewPaginator,
-                //     cfg:{
-                //         axis: 'x',
-                //         selector:">ul>li"
-                //     }
-                // }],
+                plugins: [{
+                    fn:Y.Plugin.ScrollViewPaginator,
+                    cfg:{
+                        axis: 'x',
+                        selector:">ul>li"
+                    }
+                }],
             }).render();
 
             scrollview.after(['scrollXChange', 'scrollYChange'], function(){
@@ -116,8 +118,6 @@
                 </li>
                 <li>
                     <h2>Card 2</h2>
-                    <p>Lorem ipsum dolor sit amet, consectetuer adipiscing elit. Aenean commodo ligula eget dolor. Aenean massa. Cum sociis natoque penatibus et magnis dis parturient montes, nascetur ridiculus mus. Donec quam felis, ultricies nec, pellentesque eu, pretium quis, sem. Nulla consequat massa quis enim. Donec pede justo, fringilla vel, aliquet nec, vulputate eget, arcu. In enim justo, rhoncus ut, imperdiet a, venenatis vitae, justo. Nullam dictum felis eu pede mollis pretium.</p>
-                    <p>Lorem ipsum dolor sit amet, consectetuer adipiscing elit. Aenean commodo ligula eget dolor. Aenean massa. Cum sociis natoque penatibus et magnis dis parturient montes, nascetur ridiculus mus. Donec quam felis, ultricies nec, pellentesque eu, pretium quis, sem. Nulla consequat massa quis enim. Donec pede justo, fringilla vel, aliquet nec, vulputate eget, arcu. In enim justo, rhoncus ut, imperdiet a, venenatis vitae, justo. Nullam dictum felis eu pede mollis pretium.</p>
                     <p>Lorem ipsum dolor sit amet, consectetuer adipiscing elit. Aenean commodo ligula eget dolor. Aenean massa. Cum sociis natoque penatibus et magnis dis parturient montes, nascetur ridiculus mus. Donec quam felis, ultricies nec, pellentesque eu, pretium quis, sem. Nulla consequat massa quis enim. Donec pede justo, fringilla vel, aliquet nec, vulputate eget, arcu. In enim justo, rhoncus ut, imperdiet a, venenatis vitae, justo. Nullam dictum felis eu pede mollis pretium.</p>
                 </li>
                 <li>
