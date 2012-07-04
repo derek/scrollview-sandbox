@@ -1,5 +1,5 @@
 /*jslint nomen:true sloppy:true white:true*/
-/*global Y*/
+/*global Y, YUI*/
 
 YUI().add('paginator-plugin', function (Y) {
 
@@ -127,10 +127,21 @@ Y.extend(PaginatorPlugin, Y.Plugin.Base, {
             host = paginator.get(HOST),
             bb = host.get(BOUNDING_BOX),
             cb = host.get(CONTENT_BOX),
+            hostFlick = host.get(FLICK),
             optimizeMemory = config.optimizeMemory || paginator.optimizeMemory,
             padding = config.padding || paginator.padding;
 
         paginator.set(AXIS, config.axis);
+
+        // Don't allow flicks on the paginated axis
+        if (config.axis === DIM_X) {
+            hostFlick.axis = DIM_Y;
+            // host.set(FLICK, hostFlick);
+        }
+        else if (config.axis === DIM_Y) {
+            hostFlick.axis = DIM_X;
+            // host.set(FLICK, hostFlick);
+        }
 
         paginator._bb = bb;
         paginator._cb = cb;
@@ -139,14 +150,21 @@ Y.extend(PaginatorPlugin, Y.Plugin.Base, {
         paginator.padding = padding;
         paginator.optimizeMemory = optimizeMemory;
 
-        paginator.afterHostMethod('_onGestureMoveStart', paginator._onGestureMoveStart);
-        paginator.afterHostMethod('_onGestureMoveEnd', paginator._onGestureMoveEnd);
+host.on('scrollEnd', function(){console.log('scrollEnded');})
+
+        // Event listeners        
+        paginator.after('indexChange', paginator._afterIndexChange);
+
+        // Method listeners
         paginator.beforeHostMethod('scrollTo', paginator._onScrollTo);
         paginator.beforeHostMethod('_mousewheel', paginator._mousewheel);
+        
+        paginator.afterHostMethod('_onGestureMoveStart', paginator._gestureMoveStart);
+        paginator.afterHostMethod('_onGestureMoveEnd', paginator._gestureMoveEnd);
         paginator.afterHostMethod('_uiDimensionsChange', paginator._afterHostUIDimensionsChange);
+        
         paginator.afterHostEvent('render', paginator._afterHostRender);
         paginator.afterHostEvent('scrollEnd', paginator._scrollEnded);
-        paginator.after('indexChange', paginator._afterIndexChange);
     },
 
     /**
@@ -159,33 +177,9 @@ Y.extend(PaginatorPlugin, Y.Plugin.Base, {
     _afterHostRender: function (e) {
         // console.log('_afterHostRender');
         var paginator = this,
-            host = paginator._host,
-            bb = paginator._bb,
-            pageNodes = paginator._getPageNodes(),
-            size = pageNodes.size(),
-            widgetHeight = bb.get('offsetHeight');
-
-        pageNodes.each(function(node, i){
-
-            var scrollHeight = node.get('scrollHeight'),
-                maxScrollY = scrollHeight - widgetHeight
-
-            if (maxScrollY < 0) {
-                maxScrollY = 0;
-            } 
-
-            paginator.cards[i] = {
-                maxScrollY: maxScrollY,
-                node: node,
-                scrollX: 0,
-                scrollY: 0
-            };
-
-        });
+            bb = paginator._bb;
 
         bb.addClass(CLASS_PAGED);
-        paginator.set(TOTAL, size);
-        paginator._optimize();
     },
 
     /**
@@ -197,10 +191,37 @@ Y.extend(PaginatorPlugin, Y.Plugin.Base, {
      */
     _afterHostUIDimensionsChange: function(e) {
         var paginator = this,
+            host = paginator._host,
+            bb = paginator._bb,
+            widgetHeight = bb.get('offsetHeight');
             pageNodes = paginator._getPageNodes(),
             size = pageNodes.size();
 
         paginator.set(TOTAL, size);
+
+        // Inefficient.  Should not reinitialize every card every syncUI
+        pageNodes.each(function(node, i){
+
+            var scrollHeight = node.get('scrollHeight'),
+                maxScrollY = scrollHeight - widgetHeight;
+
+            if (maxScrollY < 0) {
+                maxScrollY = 0;
+            } 
+
+            // Don't initialize any cards that already have been.
+            if (!paginator.cards[i]) {
+                paginator.cards[i] = {
+                    maxScrollY: maxScrollY,
+                    node: node,
+                    scrollX: 0,
+                    scrollY: 0
+                };
+            } else {
+                paginator.cards[i].maxScrollY = maxScrollY;
+            }
+
+        });
     },
 
     _onScrollTo: function (x, y, duration, easing, node) {
@@ -229,7 +250,7 @@ Y.extend(PaginatorPlugin, Y.Plugin.Base, {
         return paginator._prevent;
     },
 
-    _onGestureMoveStart: function(e){
+    _gestureMoveStart: function(e){
 
         var paginator = this,
             host = paginator._host,
@@ -241,22 +262,19 @@ Y.extend(PaginatorPlugin, Y.Plugin.Base, {
     },
 
     /**
-     * Over-rides the host _onGestureMoveEnd method
-     * Executed on flicks at end of strip, or low velocity flicks that are not enough to advance the page.
+     * Executed after
      *
      * @method _onGestureMoveEnd
      * @protected
      */
-     // Does not prevent
-    _onGestureMoveEnd: function (e) {
+    _gestureMoveEnd: function (e) {
 
         var paginator = this,
             host = paginator._host,
             gesture = host._gesture,
             axis = gesture.axis,
             isForward = (axis === DIM_X ? gesture.deltaX > 0 : gesture.deltaY > 0),
-            index = paginator.get(INDEX),
-            offsetY;
+            index = paginator._cIndex;
 
         paginator._uiDisable();
 
@@ -272,7 +290,6 @@ Y.extend(PaginatorPlugin, Y.Plugin.Base, {
             paginator.cards[index].scrollY -= gesture.deltaY;
         }
     },
-
 
     /**
      * Executed to respond to the mousewheel event, by over-riding the default mousewheel method.
@@ -317,8 +334,8 @@ Y.extend(PaginatorPlugin, Y.Plugin.Base, {
         
         var paginator = this,
             host = this._host,
-            index = paginator.get(INDEX);
-
+            index = paginator._cIndex;
+            
         paginator.cards[index].scrollY = host.get('scrollY');
 
         paginator._optimize();
@@ -330,7 +347,7 @@ Y.extend(PaginatorPlugin, Y.Plugin.Base, {
      *
      * @method _afterIndexChange
      * @param {Event.Facade}
-        * @protected
+     * @protected
      */
     _afterIndexChange: function (e) {
         // console.log('paginator:_afterIndexChange');
@@ -342,7 +359,7 @@ Y.extend(PaginatorPlugin, Y.Plugin.Base, {
         // console.log('set scrollY to ', paginator.cards[newVal].scrollY);
         host.set('scrollY', paginator.cards[index].scrollY, {src: 'ui'});
 
-        // Cache the index value
+        // Cache the new index value
         paginator._cIndex = index;
 
         if(e.src !== UI) {
@@ -360,7 +377,7 @@ Y.extend(PaginatorPlugin, Y.Plugin.Base, {
         var paginator = this,
             host = paginator._host,
             optimizeMemory = paginator.optimizeMemory,
-            currentIndex = paginator.get(INDEX),
+            currentIndex = paginator._cIndex,
             pageNodes;
 
         if (!optimizeMemory) {
@@ -486,7 +503,7 @@ Y.extend(PaginatorPlugin, Y.Plugin.Base, {
      */
     next: function () {
         var paginator = this,
-            index = paginator.get(INDEX),
+            index = paginator._cIndex,
             target = index + 1;
 
         paginator.set(INDEX, target);
@@ -499,7 +516,7 @@ Y.extend(PaginatorPlugin, Y.Plugin.Base, {
      */
     prev: function () {
         var paginator = this,
-            index = paginator.get(INDEX),
+            index = paginator._cIndex,
             target = index - 1;
 
         if (target < 0) {
@@ -527,20 +544,11 @@ Y.extend(PaginatorPlugin, Y.Plugin.Base, {
         var paginator = this,
             host = paginator._host,
             axis = paginator.get(AXIS),
-            duration = (duration !== undefined) ? duration : PaginatorPlugin.TRANSITION.duration,
-            easing = (easing !== undefined) ? duration : PaginatorPlugin.TRANSITION.easing,
             pageNodes = paginator._getPageNodes(),
             scrollAxis, scrollVal;
 
-        // // If the delta is 0 (a no-movement mouseclick)
-        // if (delta === 0) {
-        //     return false;
-        // }
-
-        // // Disable the UI while animating
-        // if (duration > 0) {
-        //     paginator._uiDisable();
-        // }
+        duration = (duration !== undefined) ? duration : PaginatorPlugin.TRANSITION.duration;
+        easing = (easing !== undefined) ? duration : PaginatorPlugin.TRANSITION.easing;
 
         // Make sure the target node is visible
         // paginator._showNodes(pageNodes.item(index));
