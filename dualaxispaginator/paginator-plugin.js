@@ -133,7 +133,7 @@ Y.extend(PaginatorPlugin, Y.Plugin.Base, {
         if (config.optimizeMemory !== undefined) {
             paginator.optimizeMemory = config.optimizeMemory;
         }
-        
+
         paginator.set(AXIS, config.axis);
 
         // Don't allow flicks on the paginated axis
@@ -541,8 +541,8 @@ Y.extend(PaginatorPlugin, Y.Plugin.Base, {
             host = paginator._host,
             axis = paginator.get(AXIS),
             pageNodes = paginator._getPageNodes(),
-            offsetProperty = (axis === DIM_X ? "offsetLeft" : "offsetTop")
-            scrollAxis = (axis === DIM_X ? SCROLL_X : SCROLL_Y)
+            offsetProperty = (axis === DIM_X ? "offsetLeft" : "offsetTop"),
+            scrollAxis = (axis === DIM_X ? SCROLL_X : SCROLL_Y),
             scrollVal;
 
         duration = (duration !== undefined) ? duration : PaginatorPlugin.TRANSITION.duration;
