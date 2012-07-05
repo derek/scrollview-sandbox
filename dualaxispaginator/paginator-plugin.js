@@ -175,7 +175,7 @@ Y.extend(PaginatorPlugin, Y.Plugin.Base, {
      */
     _afterHostRender: function (e) {
         var paginator = this,
-            bb = paginator._bb;
+            bb = paginator._bb,
             host = paginator._host,
             index = paginator._cIndex,
             maxScrollY = paginator.cards[index].maxScrollY;
@@ -198,7 +198,7 @@ Y.extend(PaginatorPlugin, Y.Plugin.Base, {
         var paginator = this,
             host = paginator._host,
             bb = paginator._bb,
-            widgetHeight = bb.get('offsetHeight');
+            widgetHeight = bb.get('offsetHeight'),
             pageNodes = paginator._getPageNodes(),
             size = pageNodes.size();
 
@@ -303,7 +303,7 @@ Y.extend(PaginatorPlugin, Y.Plugin.Base, {
         // @TODO: This is hacky, it's not a gesture.  Find a better way
         host._gesture = {
             axis: DIM_Y
-        }
+        };
 
         // Only if the mousewheel event occurred on a DOM node inside the BB
         if (bb.contains(e.target) && axis === DIM_Y){
