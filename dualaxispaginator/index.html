@@ -62,8 +62,8 @@
 
             var scrollview = new Y.ScrollView({
                 srcNode:"#content",
-                width:'100%',
-                height:480,
+                width:320,
+                height:360,
                 axisX: true,
                 axisY: true,
                 flick: {
@@ -73,6 +73,7 @@
                 plugins: [{
                     fn:Y.Plugin.ScrollViewPaginator,
                     cfg:{
+                        optimizeMemory: true,
                         axis: 'x',
                         selector:">ul>li"
                     }

@@ -110,7 +110,7 @@ PaginatorPlugin.ATTRS = {
 
 Y.extend(PaginatorPlugin, Y.Plugin.Base, {
 
-    optimizeMemory: true,
+    optimizeMemory: false,
     padding: 1,
     _uiEnabled: true,
     _prevent: new Y.Do.Prevent(),
@@ -128,19 +128,22 @@ Y.extend(PaginatorPlugin, Y.Plugin.Base, {
             bb = host.get(BOUNDING_BOX),
             cb = host.get(CONTENT_BOX),
             hostFlick = host.get(FLICK),
-            optimizeMemory = config.optimizeMemory || paginator.optimizeMemory,
             padding = config.padding || paginator.padding;
 
+        if (config.optimizeMemory !== undefined) {
+            paginator.optimizeMemory = config.optimizeMemory;
+        }
+        
         paginator.set(AXIS, config.axis);
 
         // Don't allow flicks on the paginated axis
         if (config.axis === DIM_X) {
             hostFlick.axis = DIM_Y;
-            // host.set(FLICK, hostFlick);
+            host.set(FLICK, hostFlick);
         }
         else if (config.axis === DIM_Y) {
             hostFlick.axis = DIM_X;
-            // host.set(FLICK, hostFlick);
+            host.set(FLICK, hostFlick);
         }
 
         paginator._bb = bb;
@@ -148,9 +151,6 @@ Y.extend(PaginatorPlugin, Y.Plugin.Base, {
         paginator._host = host;
 
         paginator.padding = padding;
-        paginator.optimizeMemory = optimizeMemory;
-
-host.on('scrollEnd', function(){console.log('scrollEnded');})
 
         // Event listeners        
         paginator.after('indexChange', paginator._afterIndexChange);
@@ -394,7 +394,7 @@ host.on('scrollEnd', function(){console.log('scrollEnded');})
         pageNodes = paginator._getStage(currentIndex);
         paginator._showNodes(pageNodes.visible);
         paginator._hideNodes(pageNodes.hidden);
-        paginator.scrollToIndex(currentIndex, 0);
+        // paginator.scrollToIndex(currentIndex, 0); // Needed if doing display:none for optimizeMemory
     },
 
     /**
@@ -437,11 +437,8 @@ host.on('scrollEnd', function(){console.log('scrollEnded');})
      * @protected
      */
     _showNodes : function (nodeList) {
-        var host = this._host,
-            cb = host.get(CONTENT_BOX);
-
         if (nodeList) {
-            nodeList.removeClass(CLASS_HIDDEN).setStyle('display', '');
+            nodeList.removeClass(CLASS_HIDDEN).setStyle('visibility', '');
         }
     },
 
@@ -453,10 +450,8 @@ host.on('scrollEnd', function(){console.log('scrollEnded');})
      * @protected
      */
     _hideNodes : function (nodeList) {
-        var host = this._host;
-
         if (nodeList) {
-            nodeList.addClass(CLASS_HIDDEN).setStyle('display', 'none');
+            nodeList.addClass(CLASS_HIDDEN).setStyle('visibility', 'hidden');
         }
     },
 
@@ -546,7 +541,9 @@ host.on('scrollEnd', function(){console.log('scrollEnded');})
             host = paginator._host,
             axis = paginator.get(AXIS),
             pageNodes = paginator._getPageNodes(),
-            scrollAxis, scrollVal;
+            offsetProperty = (axis === DIM_X ? "offsetLeft" : "offsetTop")
+            scrollAxis = (axis === DIM_X ? SCROLL_X : SCROLL_Y)
+            scrollVal;
 
         duration = (duration !== undefined) ? duration : PaginatorPlugin.TRANSITION.duration;
         easing = (easing !== undefined) ? duration : PaginatorPlugin.TRANSITION.easing;
@@ -554,15 +551,8 @@ host.on('scrollEnd', function(){console.log('scrollEnded');})
         // Make sure the target node is visible
         paginator._showNodes(pageNodes.item(index));
 
-        // Determine where to scroll to
-        if (axis === DIM_Y) {
-            scrollAxis = SCROLL_Y;
-            scrollVal = pageNodes.item(index).get("offsetTop");
-        } else {
-            scrollAxis = SCROLL_X;
-            scrollVal = pageNodes.item(index).get("offsetLeft");
-        }
-        
+        scrollVal = pageNodes.item(index).get(offsetProperty);
+
         host.set(scrollAxis, scrollVal, {
             duration: duration,
             easing: easing
