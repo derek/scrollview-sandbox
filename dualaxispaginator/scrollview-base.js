@@ -429,7 +429,7 @@ Y.ScrollView = Y.extend(ScrollView, Y.Widget, {
             TRANS = ScrollView._TRANSITION,
             callback = sv._boundScollEnded,
             transition;
-            
+
         duration = duration || 0;
         easing = easing || ScrollView.EASING;
         node = node || cb;
@@ -703,7 +703,7 @@ Y.ScrollView = Y.extend(ScrollView, Y.Widget, {
             this._onTransEnd();
             return;
         }
-
+        
         var sv = this,
             gesture = sv._gesture,
             axis = gesture.flick.axis,

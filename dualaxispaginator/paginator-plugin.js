@@ -174,7 +174,6 @@ host.on('scrollEnd', function(){console.log('scrollEnded');})
         * @protected
      */
     _afterHostRender: function (e) {
-        // console.log('_afterHostRender');
         var paginator = this,
             bb = paginator._bb;
             host = paginator._host,
@@ -209,12 +208,15 @@ host.on('scrollEnd', function(){console.log('scrollEnded');})
         pageNodes.each(function(node, i){
 
             var scrollHeight = node.get('scrollHeight'),
-                maxScrollY = scrollHeight - widgetHeight;
+                maxScrollY;
 
-            if (maxScrollY < 0) {
+            if (scrollHeight < widgetHeight) {
                 maxScrollY = 0;
-            } 
-
+            }
+            else {
+                maxScrollY = scrollHeight - widgetHeight;
+            }
+            
             // Don't initialize any cards that already have been.
             if (!paginator.cards[i]) {
                 paginator.cards[i] = {
@@ -231,7 +233,6 @@ host.on('scrollEnd', function(){console.log('scrollEnded');})
     },
 
     _onScrollTo: function (x, y, duration, easing, node) {
-        // console.log('_onScrollTo: ', x, y);
         var paginator = this,
             host = paginator._host,
             gesture = host._gesture,
@@ -330,20 +331,19 @@ host.on('scrollEnd', function(){console.log('scrollEnded');})
         * @protected
      */
     _scrollEnded: function (e) {
-        // console.log('paginator:_scrollEnded');
-        
         var paginator = this,
             host = this._host,
             index = paginator._cIndex,
             scrollY = host.get('scrollY');
-        
-        // Do some cleanup
-        delete paginator._gesture;
 
         paginator.cards[index].scrollY = scrollY;
-// console.log('_scrollEnded: setting ' + index + ' to ' + scrollY);
-        // paginator._optimize();
-        // paginator._uiEnable();
+        paginator._optimize();
+        paginator._uiEnable();
+        
+        // Do some cleanup
+        // The _gesture object shouldn't be left around, can cause some confusion if it is accessed after the gesture process is complete
+        // @todo: Move to host
+        // delete host._gesture;
     },
 
     /**
@@ -354,8 +354,6 @@ host.on('scrollEnd', function(){console.log('scrollEnded');})
      * @protected
      */
     _afterIndexChange: function (e) {
-        // console.log('paginator:_afterIndexChange');
-        
         var paginator = this,
             host = this._host,
             index = e.newVal,
@@ -393,10 +391,10 @@ host.on('scrollEnd', function(){console.log('scrollEnded');})
         }
 
         // Show the pages in/near the viewport & hide the rest
-        // pageNodes = paginator._getStage(currentIndex);
-        // paginator._showNodes(pageNodes.visible);
-        // paginator._hideNodes(pageNodes.hidden);
-        // host.scrollTo(currentIndex, 0);
+        pageNodes = paginator._getStage(currentIndex);
+        paginator._showNodes(pageNodes.visible);
+        paginator._hideNodes(pageNodes.hidden);
+        paginator.scrollToIndex(currentIndex, 0);
     },
 
     /**
@@ -469,9 +467,7 @@ host.on('scrollEnd', function(){console.log('scrollEnded');})
      * @protected
      */
     _uiEnable: function () {
-        var paginator = this;
-// console.log('_uiEnable');
-        paginator._uiEnabled = true;
+        this._uiEnabled = true;
     },
 
     /**
@@ -481,10 +477,7 @@ host.on('scrollEnd', function(){console.log('scrollEnded');})
      * @protected
      */
     _uiDisable: function () {
-        var paginator = this;
-
-// console.log('_uiDisable');
-        paginator._uiEnabled = false;
+        this._uiEnabled = false;
     },
 
     /**
@@ -559,7 +552,7 @@ host.on('scrollEnd', function(){console.log('scrollEnded');})
         easing = (easing !== undefined) ? duration : PaginatorPlugin.TRANSITION.easing;
 
         // Make sure the target node is visible
-        // paginator._showNodes(pageNodes.item(index));
+        paginator._showNodes(pageNodes.item(index));
 
         // Determine where to scroll to
         if (axis === DIM_Y) {

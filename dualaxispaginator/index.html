@@ -14,6 +14,7 @@
         <style>
 
         #dataBox {
+            display:none;
             width:100%;
             color:white;
             background-color:green;
@@ -61,8 +62,8 @@
 
             var scrollview = new Y.ScrollView({
                 srcNode:"#content",
-                width:400,
-                height:300,
+                width:'100%',
+                height:480,
                 axisX: true,
                 axisY: true,
                 flick: {
