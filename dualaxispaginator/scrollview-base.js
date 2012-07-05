@@ -429,7 +429,7 @@ Y.ScrollView = Y.extend(ScrollView, Y.Widget, {
             TRANS = ScrollView._TRANSITION,
             callback = sv._boundScollEnded,
             transition;
-
+            
         duration = duration || 0;
         easing = easing || ScrollView.EASING;
         node = node || cb;
@@ -700,6 +700,7 @@ Y.ScrollView = Y.extend(ScrollView, Y.Widget, {
         // If you flick then click before the animation completes, this will stop it
         // todo: evaluate
         if (!this._gesture.flick) {
+            this._onTransEnd();
             return;
         }
 
@@ -763,23 +764,32 @@ Y.ScrollView = Y.extend(ScrollView, Y.Widget, {
             scrollY = sv.get(SCROLL_Y),
             bb = sv._bb,
             scrollOffset = 10, // 10px
-            scrollToY = scrollY - (e.wheelDelta * scrollOffset);
+            isForward = e.wheelDelta > 0 ? true : false,
+            scrollToY = scrollY - ( (isForward ? 1 : -1) * scrollOffset);
+
+        if (scrollToY < sv._minScrollY) {
+            scrollToY = sv._minScrollY;
+        }
+        if (scrollToY > sv._maxScrollY) {
+            scrollToY = sv._maxScrollY;
+        }
 
         if (bb.contains(e.target)){
 
-            if (scrollToY >= sv._minScrollY && scrollToY <= sv._maxScrollY) {
-                sv.set(SCROLL_Y, scrollToY);
+            // Jump to the new offset
+            sv.set(SCROLL_Y, scrollToY);
 
-                // if we have scrollbars plugin, update & set the flash timer on the scrollbar
-                // TODO: This probably shouldn't be in this module
-                if (sv.scrollbars) {
-                    // TODO: The scrollbars should handle this themselves
-                    sv.scrollbars._update();
-                    sv.scrollbars.flash();
-                    // or just this
-                    // sv.scrollbars._hostDimensionsChange();
-                }
+            // if we have scrollbars plugin, update & set the flash timer on the scrollbar
+            // TODO: This probably shouldn't be in this module
+            if (sv.scrollbars) {
+                // TODO: The scrollbars should handle this themselves
+                sv.scrollbars._update();
+                sv.scrollbars.flash();
+                // or just this
+                // sv.scrollbars._hostDimensionsChange();
             }
+
+            sv._onTransEnd();
 
             // prevent browser default behavior on mouse scroll
             e.preventDefault();
@@ -835,10 +845,10 @@ Y.ScrollView = Y.extend(ScrollView, Y.Widget, {
 
         if(e.src !== UI) {
             if (e.attrName === SCROLL_X) {
-                sv.scrollTo(val, gesture.startY, duration, easing);
+                sv.scrollTo(val, sv.get(SCROLL_Y), duration, easing);
             }
             else {
-                sv.scrollTo(gesture.startX, val, duration, easing);
+                sv.scrollTo(sv.get(SCROLL_X), val, duration, easing);
             }
         }
     },

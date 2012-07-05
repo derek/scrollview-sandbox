@@ -157,9 +157,8 @@ host.on('scrollEnd', function(){console.log('scrollEnded');})
 
         // Method listeners
         paginator.beforeHostMethod('scrollTo', paginator._onScrollTo);
-        paginator.beforeHostMethod('_mousewheel', paginator._mousewheel);
-        
-        paginator.afterHostMethod('_onGestureMoveStart', paginator._gestureMoveStart);
+        paginator.beforeHostMethod('_mousewheel', paginator._beforeHostMousewheel);
+
         paginator.afterHostMethod('_onGestureMoveEnd', paginator._gestureMoveEnd);
         paginator.afterHostMethod('_uiDimensionsChange', paginator._afterHostUIDimensionsChange);
         
@@ -178,7 +177,14 @@ host.on('scrollEnd', function(){console.log('scrollEnded');})
         // console.log('_afterHostRender');
         var paginator = this,
             bb = paginator._bb;
+            host = paginator._host,
+            index = paginator._cIndex,
+            maxScrollY = paginator.cards[index].maxScrollY;
 
+        // Set the max height base can scroll to
+        host._maxScrollY = maxScrollY;
+
+        // Add the paginator class
         bb.addClass(CLASS_PAGED);
     },
 
@@ -237,38 +243,27 @@ host.on('scrollEnd', function(){console.log('scrollEnded');})
 
             if (axis === DIM_Y) {
                 node = paginator.cards[index].node;
-                x = 0;
+                x = null;
             }
             else {
                 node = host._cb;
-                y = 0;
+                y = null;
             }
         }
 
+        // Now run scrollTo with the modified values
         host._scrollTo(x, y, duration, easing, node);
 
         return paginator._prevent;
     },
 
-    _gestureMoveStart: function(e){
-
-        var paginator = this,
-            host = paginator._host,
-            index = paginator._cIndex,
-            maxScrollY = paginator.cards[index].maxScrollY;
-
-        // Set the max height base can scroll to
-        host._maxScrollY = maxScrollY;
-    },
-
     /**
-     * Executed after
+     * Executed after host._gestureMoveEnd
      *
      * @method _onGestureMoveEnd
      * @protected
      */
     _gestureMoveEnd: function (e) {
-
         var paginator = this,
             host = paginator._host,
             gesture = host._gesture,
@@ -278,6 +273,7 @@ host.on('scrollEnd', function(){console.log('scrollEnded');})
 
         paginator._uiDisable();
 
+        // Was the gesture on the paginated axis?
         if (axis === DIM_X) {
             if (isForward) {
                 paginator.next();
@@ -285,9 +281,6 @@ host.on('scrollEnd', function(){console.log('scrollEnded');})
             else {
                 paginator.prev();
             }
-        }
-        else if (axis === DIM_Y) {
-            paginator.cards[index].scrollY -= gesture.deltaY;
         }
     },
 
@@ -298,15 +291,22 @@ host.on('scrollEnd', function(){console.log('scrollEnded');})
      * @param {Event.Facade}
      * @protected
      */
-    _mousewheel: function (e) {
+    _beforeHostMousewheel: function (e) {
         var paginator = this,
             host = paginator._host,
             bb = host._bb,
             isForward = e.wheelDelta < 0, // down (negative) is forward.  @TODO Should revisit.
             axis = paginator.get(AXIS);
 
+        // Set the axis for this event.
+        // @TODO: This is hacky, it's not a gesture.  Find a better way
+        host._gesture = {
+            axis: DIM_Y
+        }
+
         // Only if the mousewheel event occurred on a DOM node inside the BB
         if (bb.contains(e.target) && axis === DIM_Y){
+
             if (isForward) {
                 paginator.next();
             }
@@ -334,12 +334,16 @@ host.on('scrollEnd', function(){console.log('scrollEnded');})
         
         var paginator = this,
             host = this._host,
-            index = paginator._cIndex;
-            
-        paginator.cards[index].scrollY = host.get('scrollY');
+            index = paginator._cIndex,
+            scrollY = host.get('scrollY');
+        
+        // Do some cleanup
+        delete paginator._gesture;
 
-        paginator._optimize();
-        paginator._uiEnable();
+        paginator.cards[index].scrollY = scrollY;
+// console.log('_scrollEnded: setting ' + index + ' to ' + scrollY);
+        // paginator._optimize();
+        // paginator._uiEnable();
     },
 
     /**
@@ -354,10 +358,14 @@ host.on('scrollEnd', function(){console.log('scrollEnded');})
         
         var paginator = this,
             host = this._host,
-            index = e.newVal;
+            index = e.newVal,
+            maxScrollY = paginator.cards[index].maxScrollY;
 
-        // console.log('set scrollY to ', paginator.cards[newVal].scrollY);
+        // Update the scrollY attribute with the current card's scrollY
         host.set('scrollY', paginator.cards[index].scrollY, {src: 'ui'});
+
+        // Set the max height base can scroll to
+        host._maxScrollY = maxScrollY;
 
         // Cache the new index value
         paginator._cIndex = index;
