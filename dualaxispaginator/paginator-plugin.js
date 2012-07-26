@@ -178,9 +178,11 @@ Y.extend(PaginatorPlugin, Y.Plugin.Base, {
             bb = paginator._bb,
             host = paginator._host,
             index = paginator._cIndex,
+            maxScrollX = paginator.cards[index].maxScrollX,
             maxScrollY = paginator.cards[index].maxScrollY;
 
         // Set the max height base can scroll to
+        host._maxScrollX = maxScrollX;
         host._maxScrollY = maxScrollY;
 
         // Add the paginator class
@@ -236,6 +238,7 @@ Y.extend(PaginatorPlugin, Y.Plugin.Base, {
                     scrollY: 0
                 };
             } else {
+                paginator.cards[i].maxScrollX = maxScrollX;
                 paginator.cards[i].maxScrollY = maxScrollY;
             }
 
@@ -374,14 +377,23 @@ Y.extend(PaginatorPlugin, Y.Plugin.Base, {
         var paginator = this,
             host = this._host,
             index = e.newVal,
-            maxScrollY = paginator.cards[index].maxScrollY;
+            maxScrollX = paginator.cards[index].maxScrollX,
+            maxScrollY = paginator.cards[index].maxScrollY,
+            gesture = host._gesture,
+            gestureAxis = gesture.axis;
 
         // Update the scrollY attribute with the current card's scrollY
-        host.set('scrollY', paginator.cards[index].scrollY, {src: 'ui'});
-
-        // Set the max height base can scroll to
-        host._maxScrollY = maxScrollY;
-
+        if (gestureAxis === DIM_Y) {
+            // Set the max width host can scroll to
+            host._maxScrollX = maxScrollX;
+            host.set('scrollX', paginator.cards[index].scrollX, {src: 'ui'});   
+        }
+        else {
+            // Set the max height host can scroll to
+            host._maxScrollY = maxScrollY;
+            host.set('scrollY', paginator.cards[index].scrollY, {src: 'ui'});   
+        }
+        
         // Cache the new index value
         paginator._cIndex = index;
 

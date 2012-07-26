@@ -414,7 +414,7 @@ Y.ScrollView = Y.extend(ScrollView, Y.Widget, {
      * @private
      */
     _scrollTo: function(x, y, duration, easing, node) {
-        console.log(y);
+        
         if (this._cDisabled) {
             return;
         }
