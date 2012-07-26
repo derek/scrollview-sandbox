@@ -198,6 +198,7 @@ Y.extend(PaginatorPlugin, Y.Plugin.Base, {
         var paginator = this,
             host = paginator._host,
             bb = paginator._bb,
+            widgetWidth = bb.get('offsetWidth'),
             widgetHeight = bb.get('offsetHeight'),
             pageNodes = paginator._getPageNodes(),
             size = pageNodes.size();
@@ -207,8 +208,16 @@ Y.extend(PaginatorPlugin, Y.Plugin.Base, {
         // Inefficient.  Should not reinitialize every card every syncUI
         pageNodes.each(function(node, i){
 
-            var scrollHeight = node.get('scrollHeight'),
-                maxScrollY;
+            var scrollWidth = node.get('scrollWidth'),
+                scrollHeight = node.get('scrollHeight'),
+                maxScrollX, maxScrollY;
+
+            if (scrollWidth < widgetWidth) {
+                maxScrollX = 0;
+            }
+            else {
+                maxScrollX = scrollWidth - widgetWidth;
+            }
 
             if (scrollHeight < widgetHeight) {
                 maxScrollY = 0;
@@ -220,6 +229,7 @@ Y.extend(PaginatorPlugin, Y.Plugin.Base, {
             // Don't initialize any cards that already have been.
             if (!paginator.cards[i]) {
                 paginator.cards[i] = {
+                    maxScrollX: maxScrollX,
                     maxScrollY: maxScrollY,
                     node: node,
                     scrollX: 0,
@@ -230,6 +240,8 @@ Y.extend(PaginatorPlugin, Y.Plugin.Base, {
             }
 
         });
+
+        console.log(paginator.cards[1]);
     },
 
     _onScrollTo: function (x, y, duration, easing, node) {
@@ -237,7 +249,7 @@ Y.extend(PaginatorPlugin, Y.Plugin.Base, {
             host = paginator._host,
             gesture = host._gesture,
             index = paginator._cIndex,
-            paginatorAxis = paginator.get('axis'),
+            paginatorAxis = paginator.get(AXIS),
             gestureAxis;
 
         if (gesture !== undefined) {
@@ -272,7 +284,7 @@ Y.extend(PaginatorPlugin, Y.Plugin.Base, {
         var paginator = this,
             host = paginator._host,
             gesture = host._gesture,
-            paginatorAxis = paginator.get('axis'),
+            paginatorAxis = paginator.get(AXIS),
             gestureAxis = gesture.axis,
             isForward = (gestureAxis === DIM_X ? gesture.deltaX > 0 : gesture.deltaY > 0),
             index = paginator._cIndex;
@@ -302,7 +314,7 @@ Y.extend(PaginatorPlugin, Y.Plugin.Base, {
             host = paginator._host,
             bb = host._bb,
             isForward = e.wheelDelta < 0, // down (negative) is forward.  @TODO Should revisit.
-            axis = paginator.get(AXIS);
+            paginatorAxis = paginator.get(AXIS);
 
         // Set the axis for this event.
         // @TODO: This is hacky, it's not a gesture.  Find a better way
@@ -311,7 +323,7 @@ Y.extend(PaginatorPlugin, Y.Plugin.Base, {
         };
 
         // Only if the mousewheel event occurred on a DOM node inside the BB
-        if (bb.contains(e.target) && axis === DIM_Y){
+        if (bb.contains(e.target) && paginatorAxis === DIM_Y){
 
             if (isForward) {
                 paginator.next();
@@ -342,7 +354,7 @@ Y.extend(PaginatorPlugin, Y.Plugin.Base, {
             scrollY = host.get('scrollY');
 
         paginator.cards[index].scrollY = scrollY;
-        paginator._optimize();
+        // paginator._optimize();
         paginator._uiEnable();
         
         // Do some cleanup
@@ -557,7 +569,7 @@ Y.extend(PaginatorPlugin, Y.Plugin.Base, {
         paginator._showNodes(pageNodes.item(index));
 
         scrollVal = pageNodes.item(index).get(offsetProperty);
-
+console.log(scrollVal);
         host.set(scrollAxis, scrollVal, {
             duration: duration,
             easing: easing
