@@ -14,7 +14,6 @@
         <style>
 
         #dataBox {
-            display:none;
             width:100%;
             color:white;
             background-color:green;
@@ -31,6 +30,7 @@
         }
 
         #content {
+            /*display:none;*/
             white-space: nowrap;
         }
 
@@ -41,6 +41,10 @@
             white-space: normal;
             border: 1px solid #000;
         }​
+
+        #kittens {
+            float:right;
+        }
 
         </style>
         
@@ -62,10 +66,10 @@
 
             var scrollview = new Y.ScrollView({
                 srcNode:"#content",
-                width:320,
+                width:360,
                 height:360,
-                axisX: true,
-                axisY: true,
+                // axisX: true,
+                // axisY: true,
                 flick: {
                     minDistance:10,
                     minVelocity:0.3
@@ -80,21 +84,41 @@
                 }],
             }).render();
 
-            scrollview.after(['scrollXChange', 'scrollYChange'], function(){
-                var x = scrollview.get('scrollX');
-                var y = scrollview.get('scrollY');
-                Y.one('#valX').set('innerHTML', x);
-                Y.one('#valY').set('innerHTML', y);
-            });
+            // scrollview.after(['scrollXChange', 'scrollYChange'], function(){
+            //     var x = scrollview.get('scrollX');
+            //     var y = scrollview.get('scrollY');
+            //     Y.one('#valX').set('innerHTML', x);
+            //     Y.one('#valY').set('innerHTML', y);
+            // });
 
-            if (scrollview.pages) {
-                scrollview.pages.after('indexChange', function(e){
-                    Y.one('#valIndex').set('innerHTML', e.newVal);
-                });
-            }
+            // if (scrollview.pages) {
+            //     scrollview.pages.after('indexChange', function(e){
+            //         Y.one('#valIndex').set('innerHTML', e.newVal);
+            //     });
+            // }
             
-            s = scrollview;
+            // s = scrollview;
             
+            
+            new Y.ScrollView({
+                srcNode:"#kittens",
+                width:360,
+                height:360,
+                axisX: false,
+                axisY: true,
+                flick: {
+                    minDistance:10,
+                    minVelocity:0.3
+                },
+                plugins: [{
+                    fn:Y.Plugin.ScrollViewPaginator,
+                    cfg:{
+                        optimizeMemory: true,
+                        axis: 'y',
+                        selector:">ul>li"
+                    }
+                }],
+            }).render();
         });
         </script>
     </head>
@@ -105,8 +129,14 @@
             <p>Y: <span id="valY">[0]</span></p>
             <p>Index: <span id="valIndex">[0]</span></p>
         </div>
+        <div id="kittens">
+            <ul>
+                <li><img src="http://placekitten.com/g/200/300"></li>
+                <li><img src="http://placekitten.com/g/200/300"></li>
+                <li><img src="http://placekitten.com/g/200/300"></li>
+            </ul>
+        </div>
         <div id="content">
-
             <ul>
                 <li>
                     <h2>Card 1</h2>

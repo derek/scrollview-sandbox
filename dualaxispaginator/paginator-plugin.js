@@ -237,18 +237,22 @@ Y.extend(PaginatorPlugin, Y.Plugin.Base, {
             host = paginator._host,
             gesture = host._gesture,
             index = paginator._cIndex,
-            axis;
+            paginatorAxis = paginator.get('axis'),
+            gestureAxis;
 
         if (gesture !== undefined) {
-            axis = gesture.axis;
+            gestureAxis = gesture.axis;
 
-            if (axis === DIM_Y) {
-                node = paginator.cards[index].node;
+            if (gestureAxis === DIM_Y) {
                 x = null;
             }
             else {
-                node = host._cb;
                 y = null;
+            }
+
+            // If they are scrolling against the specified axis, pull out the card as the node to have its own offset
+            if (paginatorAxis !== gestureAxis) {
+                node = paginator.cards[index].node;
             }
         }
 

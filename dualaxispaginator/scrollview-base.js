@@ -383,7 +383,6 @@ Y.ScrollView = Y.extend(ScrollView, Y.Widget, {
         easing = easing || ScrollView.SNAP_EASING;
 
         node = node || sv._cb;
-
         sv.set(SCROLL_X, x, {src: 'ui'});
         sv.set(SCROLL_Y, y, {src: 'ui'});
         sv.scrollTo(x, y, duration, easing, node);
@@ -548,6 +547,9 @@ Y.ScrollView = Y.extend(ScrollView, Y.Widget, {
             sv._cAxisX = axisX;
             sv._cAxisY = axisY;
 
+            // TODO: Review if neccesary (#2530129)
+            e.stopPropagation();
+            
             if (sv._prevent.start) {
                 e.preventDefault();
             }
