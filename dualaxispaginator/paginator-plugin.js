@@ -272,14 +272,15 @@ Y.extend(PaginatorPlugin, Y.Plugin.Base, {
         var paginator = this,
             host = paginator._host,
             gesture = host._gesture,
-            axis = gesture.axis,
-            isForward = (axis === DIM_X ? gesture.deltaX > 0 : gesture.deltaY > 0),
+            paginatorAxis = paginator.get('axis'),
+            gestureAxis = gesture.axis,
+            isForward = (gestureAxis === DIM_X ? gesture.deltaX > 0 : gesture.deltaY > 0),
             index = paginator._cIndex;
 
         paginator._uiDisable();
 
         // Was the gesture on the paginated axis?
-        if (axis === DIM_X) {
+        if (gestureAxis === paginatorAxis) {
             if (isForward) {
                 paginator.next();
             }
