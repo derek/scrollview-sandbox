@@ -88,7 +88,10 @@ PaginatorPlugin.ATTRS = {
      * @default 0
      */
     index: {
-        value: 0
+        value: 0,
+        validator: function(val) {
+            return val >= 0 && val < this.get(TOTAL);
+        }
     },
 
     /**
@@ -110,13 +113,6 @@ PaginatorPlugin.ATTRS = {
 
 Y.extend(PaginatorPlugin, Y.Plugin.Base, {
 
-    optimizeMemory: false,
-    padding: 1,
-    _uiEnabled: true,
-    _prevent: new Y.Do.Prevent(),
-    cards: [],
-    _cIndex: 0,
-
     /**
      * Designated initializer
      *
@@ -129,6 +125,13 @@ Y.extend(PaginatorPlugin, Y.Plugin.Base, {
             cb = host.get(CONTENT_BOX),
             hostFlick = host.get(FLICK),
             padding = config.padding || paginator.padding;
+        
+        paginator.cards = [];
+        paginator.optimizeMemory = false;
+        paginator.padding = 1;
+        paginator._uiEnabled = true;
+        paginator._prevent = new Y.Do.Prevent();
+        paginator._cIndex = 0;
 
         if (config.optimizeMemory !== undefined) {
             paginator.optimizeMemory = config.optimizeMemory;
@@ -178,12 +181,16 @@ Y.extend(PaginatorPlugin, Y.Plugin.Base, {
             bb = paginator._bb,
             host = paginator._host,
             index = paginator._cIndex,
+            paginatorAxis = paginator.get(AXIS),
             maxScrollX = paginator.cards[index].maxScrollX,
             maxScrollY = paginator.cards[index].maxScrollY;
 
-        // Set the max height base can scroll to
-        host._maxScrollX = maxScrollX;
-        host._maxScrollY = maxScrollY;
+        if (paginatorAxis === DIM_Y) {
+            host._maxScrollX = maxScrollX;
+        }
+        else if (paginatorAxis === DIM_X) {
+            host._maxScrollY = maxScrollY;
+        }
 
         // Add the paginator class
         bb.addClass(CLASS_PAGED);
@@ -208,9 +215,9 @@ Y.extend(PaginatorPlugin, Y.Plugin.Base, {
         paginator.set(TOTAL, size);
 
         // Inefficient.  Should not reinitialize every card every syncUI
-        pageNodes.each(function(node, i){
-
-            var scrollWidth = node.get('scrollWidth'),
+        for(var i=0; i < size; i++) {
+            var node = pageNodes.item(i),
+                scrollWidth = node.get('scrollWidth'),
                 scrollHeight = node.get('scrollHeight'),
                 maxScrollX, maxScrollY;
 
@@ -220,7 +227,7 @@ Y.extend(PaginatorPlugin, Y.Plugin.Base, {
             else {
                 maxScrollX = scrollWidth - widgetWidth;
             }
-
+            
             if (scrollHeight < widgetHeight) {
                 maxScrollY = 0;
             }
@@ -242,9 +249,7 @@ Y.extend(PaginatorPlugin, Y.Plugin.Base, {
                 paginator.cards[i].maxScrollY = maxScrollY;
             }
 
-        });
-
-        console.log(paginator.cards[1]);
+        };
     },
 
     _onScrollTo: function (x, y, duration, easing, node) {
@@ -393,7 +398,7 @@ Y.extend(PaginatorPlugin, Y.Plugin.Base, {
             host._maxScrollY = maxScrollY;
             host.set('scrollY', paginator.cards[index].scrollY, {src: 'ui'});   
         }
-        
+
         // Cache the new index value
         paginator._cIndex = index;
 
@@ -565,7 +570,6 @@ Y.extend(PaginatorPlugin, Y.Plugin.Base, {
      * @param easing {String} The timing function to use in the animation
      */
     scrollToIndex: function (index, duration, easing) {
-
         var paginator = this,
             host = paginator._host,
             axis = paginator.get(AXIS),
@@ -581,7 +585,7 @@ Y.extend(PaginatorPlugin, Y.Plugin.Base, {
         paginator._showNodes(pageNodes.item(index));
 
         scrollVal = pageNodes.item(index).get(offsetProperty);
-console.log(scrollVal);
+
         host.set(scrollAxis, scrollVal, {
             duration: duration,
             easing: easing
