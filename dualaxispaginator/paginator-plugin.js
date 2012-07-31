@@ -359,9 +359,17 @@ Y.extend(PaginatorPlugin, Y.Plugin.Base, {
         var paginator = this,
             host = this._host,
             index = paginator._cIndex,
-            scrollY = host.get('scrollY');
+            scrollX = host.get('scrollX'),
+            scrollY = host.get('scrollY'),
+            paginatorAxis = paginator.get(AXIS);
 
-        paginator.cards[index].scrollY = scrollY;
+        if (paginatorAxis === DIM_Y) {
+            paginator.cards[index].scrollX = scrollX;
+        }
+        else {
+            paginator.cards[index].scrollY = scrollY;
+        }
+        
         // paginator._optimize();
         paginator._uiEnable();
         

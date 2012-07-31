@@ -651,7 +651,7 @@ Y.ScrollView = Y.extend(ScrollView, Y.Widget, {
 
         gesture.onGestureMove.detach();
         gesture.onGestureMoveEnd.detach();
-
+        
         // Only if this gesture wasn't a flick, and there was movement
         if (!flick && gesture.deltaX !== null && gesture.deltaY !== null) {
             isOOB = sv._isOOB();
@@ -678,15 +678,24 @@ Y.ScrollView = Y.extend(ScrollView, Y.Widget, {
     _flick: function(e) {
         var sv = this,
             gesture = sv._gesture,
-            flick = e.flick;
+            axisX = sv._cAxisX,
+            axisY = sv._cAxisY,
+            flick = e.flick,
+            axis;
 
         if (!sv._cDisabled) {
-            gesture.flick = flick;
-            sv._cDecel = sv.get(DECELERATION);
-            sv._cBounce = sv.get(BOUNCE);
-            sv._cAxisX = sv.get(AXIS_X);
-            sv._cAxisY = sv.get(AXIS_Y);
-            sv._flickFrame(flick.velocity);
+            axis = flick.axis;
+
+            // We can't scroll on this axis, so prevent unneccesary firing of _flickFrame
+            if ((axis === 'x' && axisX) || (axis === 'y' && axisY)) {
+                gesture.flick = flick;
+                sv._cDecel = sv.get(DECELERATION);
+                sv._cBounce = sv.get(BOUNCE);
+                sv._cAxisX = sv.get(AXIS_X);
+                sv._cAxisY = sv.get(AXIS_Y);
+                sv._flickFrame(flick.velocity);
+            }
+
         }
     },
 
@@ -705,7 +714,7 @@ Y.ScrollView = Y.extend(ScrollView, Y.Widget, {
             this._onTransEnd();
             return;
         }
-        
+
         var sv = this,
             gesture = sv._gesture,
             axis = gesture.flick.axis,
@@ -801,7 +810,6 @@ Y.ScrollView = Y.extend(ScrollView, Y.Widget, {
     // TODO
     _isOOB: function () {
 
-
         var sv = this,
             currentX = sv.get(SCROLL_X),
             currentY = sv.get(SCROLL_Y),
@@ -809,7 +817,7 @@ Y.ScrollView = Y.extend(ScrollView, Y.Widget, {
             minY = sv._minScrollY,
             maxX = sv._maxScrollX,
             maxY = sv._maxScrollY;
-            
+
         return currentX < minX || currentX > maxX || currentY < minY || currentY > maxY;
     },
 
