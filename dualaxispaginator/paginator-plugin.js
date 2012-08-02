@@ -401,28 +401,14 @@ YUI.add('paginator-plugin', function (Y, NAME) {
          * @protected
          */
         _getStage : function (index) {
-            var paginator = this,
-                host = paginator._host,
-                padding = paginator.padding,
-                visibleCount = padding + 1 + padding, // Before viewport | viewport | after viewport
-                pageNodes = paginator._getPageNodes(),
-                pageCount = paginator.get(TOTAL),
-                start,
-                visible,
-                hidden;
-
-            // Somehow this works.  @TODO cleanup
-            start = Math.max(index - padding, 0);
-            if (start + visibleCount > pageCount) {
-                start = start - (start + visibleCount - pageCount);
-            }
-
-            visible = pageNodes.splice(start, visibleCount);
-            hidden = pageNodes; // everything leftover
-
+            var padding = this.padding,
+                pageNodes = this._getPageNodes(),
+                pageCount = this.get(TOTAL),
+                start = Math.max(0, index - padding),
+                end = Math.min(pageCount, index + 1 + padding); // noninclusive
             return {
-                visible: visible,
-                hidden: hidden
+                visible: pageNodes.splice(start, end - start),
+                hidden: pageNodes
             };
         },
 
