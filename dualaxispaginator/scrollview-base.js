@@ -173,7 +173,9 @@ YUI.add('scrollview-base', function (Y, NAME) {
             sv._cDisabled = sv.get(DISABLED);
             sv._uiDimensionsChange();
             sv._bindMousewheel(MOUSEWHEEL_ENABLED);
-            sv.scrollTo(sv.get(SCROLL_X), sv.get(SCROLL_Y));
+            if (sv._isOOB()) {
+                sv._afterOOB();
+            }
         },
 
         /**
@@ -185,12 +187,9 @@ YUI.add('scrollview-base', function (Y, NAME) {
          */
         _getScrollDims: function () {
             var sv = this,
-                origX = sv.get(SCROLL_X),
-                origY = sv.get(SCROLL_Y),
                 cb = sv._cb,
                 bb = sv._bb,
                 TRANS = ScrollView._TRANSITION,
-                HWTransform,
                 dims;
 
             // TODO: Is this OK? Just in case it's called 'during' a transition.
@@ -199,21 +198,12 @@ YUI.add('scrollview-base', function (Y, NAME) {
                 cb.setStyle(TRANS.PROPERTY, EMPTY);
             }
 
-            HWTransform = sv._forceHWTransforms;
-            sv._forceHWTransforms = false;  // the z translation was causing issues with picking up accurate scrollWidths in Chrome/Mac.
-
-            sv._moveTo(cb, 0, 0);
-
             dims = {
                 'offsetWidth': bb.get('offsetWidth'),
                 'offsetHeight': bb.get('offsetHeight'),
                 'scrollWidth': bb.get('scrollWidth'),
                 'scrollHeight': bb.get('scrollHeight')
             };
-
-            sv._moveTo(cb, -1 * origX, -1 * origY);
-
-            sv._forceHWTransforms = HWTransform;
 
             return dims;
         },
