@@ -495,6 +495,11 @@ YUI.add('scrollview-base', function (Y, NAME) {
                     e.preventDefault();
                 }
 
+                // if a flick animation is in progress, cancel it
+                if (sv._flickAnim) {
+                    sv._flickAnim.cancel();
+                }
+
                 sv._gesture = {
                     axis: null,
 
@@ -641,14 +646,6 @@ YUI.add('scrollview-base', function (Y, NAME) {
          * @protected
          */
         _flickFrame: function (velocity) {
-
-            // If you flick then click before the animation completes, this will stop it
-            // todo: evaluate
-            if (!this._gesture.flick) {
-                this._onTransEnd();
-                return;
-            }
-
             var sv = this,
                 gesture = sv._gesture,
                 axis = gesture.flick.axis,
@@ -688,7 +685,7 @@ YUI.add('scrollview-base', function (Y, NAME) {
                     sv.set(SCROLL_Y, newY);
                 }
 
-                Y.later(step, sv, '_flickFrame', [velocity]);
+                sv._flickAnim = Y.later(step, sv, '_flickFrame', [velocity]);
             }
         },
 
