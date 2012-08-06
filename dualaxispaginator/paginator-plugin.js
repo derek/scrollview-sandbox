@@ -295,9 +295,14 @@ Y.extend(PaginatorPlugin, Y.Plugin.Base, {
             paginatorAxis = paginator.get(AXIS),
             gestureAxis = gesture.axis,
             isForward = (gestureAxis === DIM_X ? gesture.deltaX > 0 : gesture.deltaY > 0),
-            index = paginator._cIndex;
+            index = paginator._cIndex,
+            rtl = host.rtl;
 
         paginator._uiDisable();
+
+        if (rtl) {
+            isForward = !isForward;
+        }
 
         // Was the gesture on the paginated axis?
         if (gestureAxis === paginatorAxis) {
@@ -369,7 +374,7 @@ Y.extend(PaginatorPlugin, Y.Plugin.Base, {
         else {
             paginator.cards[index].scrollY = scrollY;
         }
-        
+
         // paginator._optimize();
         paginator._uiEnable();
         

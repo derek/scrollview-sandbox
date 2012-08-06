@@ -108,7 +108,10 @@ Y.ScrollView = Y.extend(ScrollView, Y.Widget, {
         // Note: You can find _bindMousewheel() inside syncUI(), becuase it depends on UI details
 
         sv._bindAttrs();
-
+        
+        // TODO: Ugly.  Fix
+        sv.rtl = (Y.one('html').getAttribute('dir').toLowerCase() === 'rtl') ? true : false;
+        
         // IE SELECT HACK. See if we can do this non-natively and in the gesture for a future release.
         if (IE) {
             sv._fixIESelect(sv._bb, sv._cb);
@@ -288,12 +291,15 @@ Y.ScrollView = Y.extend(ScrollView, Y.Widget, {
             width = scrollDims.offsetWidth,
             height = scrollDims.offsetHeight,
             scrollWidth = scrollDims.scrollWidth,
-            scrollHeight = scrollDims.scrollHeight;
-
-        sv._minScrollX = 0;
+            scrollHeight = scrollDims.scrollHeight,
+            rtl = sv.rtl;
+            
+        // sv._minScrollX = 0;
         sv._minScrollY = 0;
-        sv._maxScrollX = scrollWidth - width;
+        // sv._maxScrollX = scrollWidth - width;
         sv._maxScrollY = scrollHeight - height;
+        sv._minScrollX = (rtl) ? (scrollWidth - width) * -1 : 0;
+        sv._maxScrollX = (this.rtl) ? 0 : scrollWidth - width;
         sv._scrollWidth = scrollWidth;
         sv._scrollHeight = scrollHeight;
 
