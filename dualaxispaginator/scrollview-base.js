@@ -293,13 +293,11 @@ Y.ScrollView = Y.extend(ScrollView, Y.Widget, {
             scrollWidth = scrollDims.scrollWidth,
             scrollHeight = scrollDims.scrollHeight,
             rtl = sv.rtl;
-            
-        // sv._minScrollX = 0;
+
+        sv._minScrollX = (rtl) ? -(scrollWidth - width) : 0;
+        sv._maxScrollX = (rtl) ? 0 : (scrollWidth - width);
         sv._minScrollY = 0;
-        // sv._maxScrollX = scrollWidth - width;
         sv._maxScrollY = scrollHeight - height;
-        sv._minScrollX = (rtl) ? (scrollWidth - width) * -1 : 0;
-        sv._maxScrollX = (this.rtl) ? 0 : scrollWidth - width;
         sv._scrollWidth = scrollWidth;
         sv._scrollHeight = scrollHeight;
 

@@ -300,6 +300,7 @@ Y.extend(PaginatorPlugin, Y.Plugin.Base, {
 
         paginator._uiDisable();
 
+        // Flip desired direction if the page is set to RtL
         if (rtl) {
             isForward = !isForward;
         }
