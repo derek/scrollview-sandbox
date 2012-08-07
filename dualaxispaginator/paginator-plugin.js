@@ -269,9 +269,9 @@ YUI.add('paginator-plugin', function (Y, NAME) {
 
             if (gestureAxis === paginatorAxis) {
                 if (gesture[(gestureAxis === DIM_X ? 'deltaX' : 'deltaY')] > 0) {
-                    paginator.next();
+                    paginator[host.rtl ? 'prev' : 'next']();
                 } else {
-                    paginator.prev();
+                    paginator[host.rtl ? 'next' : 'prev']();
                 }
             }
         },
@@ -400,7 +400,7 @@ YUI.add('paginator-plugin', function (Y, NAME) {
          * @returns {object}
          * @protected
          */
-        _getStage : function (index) {
+        _getStage: function (index) {
             var padding = this.padding,
                 pageNodes = this._getPageNodes(),
                 pageCount = this.get(TOTAL),

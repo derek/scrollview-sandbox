@@ -87,6 +87,9 @@ YUI.add('scrollview-base', function (Y, NAME) {
             sv._bindDrag(sv.get(DRAG));
             // Note: You can find _bindMousewheel() inside syncUI(), becuase it depends on UI details
             sv._bindAttrs();
+
+            // TODO: Ugly.  Fix
+            sv.rtl = (Y.one('html').getAttribute('dir').toLowerCase() === 'rtl') ? true : false;
         },
 
         /**
@@ -222,11 +225,12 @@ YUI.add('scrollview-base', function (Y, NAME) {
                 width = scrollDims.offsetWidth,
                 height = scrollDims.offsetHeight,
                 scrollWidth = scrollDims.scrollWidth,
-                scrollHeight = scrollDims.scrollHeight;
+                scrollHeight = scrollDims.scrollHeight,
+                rtl = sv.rtl;
 
-            sv._minScrollX = 0;
+            sv._minScrollX = (rtl) ? -(scrollWidth - width) : 0;
+            sv._maxScrollX = (rtl) ? 0 : (scrollWidth - width);
             sv._minScrollY = 0;
-            sv._maxScrollX = scrollWidth - width;
             sv._maxScrollY = scrollHeight - height;
             sv._scrollWidth = scrollWidth;
             sv._scrollHeight = scrollHeight;
@@ -824,7 +828,7 @@ YUI.add('scrollview-base', function (Y, NAME) {
          */
         _afterDimChange: function () {
             this._uiDimensionsChange();
-        },
+        }
 
     }, {
 
