@@ -1,623 +1,539 @@
-/*jslint nomen:true sloppy:true white:true*/
-/*global Y, YUI*/
+/*jslint nomen:true sloppy:true*/
+/*global YUI*/
 
-YUI().add('paginator-plugin', function (Y) {
-
-/**
- * Provides a plugin, which adds pagination support to ScrollView instances
- *
- * @module scrollview-paginator
- */
-var getClassName = Y.ClassNameManager.getClassName,
-    SCROLLVIEW = 'scrollview',
-    CLASS_HIDDEN = getClassName(SCROLLVIEW, 'hidden'),
-    CLASS_PAGED = getClassName(SCROLLVIEW, 'paged'),
-    UI = (Y.ScrollView) ? Y.ScrollView.UI_SRC : "ui",
-    INDEX = "index",
-    SCROLL_X = "scrollX",
-    SCROLL_Y = "scrollY",
-    TOTAL = "total",
-    HOST = "host",
-    BOUNDING_BOX = "boundingBox",
-    CONTENT_BOX = "contentBox",
-    SELECTOR = "selector",
-    FLICK = "flick",
-    DRAG = "drag",
-
-    DIM_X = "x",
-    DIM_Y = "y",
-    AXIS = 'axis';
-
-/**
- * Scrollview plugin that adds support for paging
- *
- * @class ScrollViewPaginator
- * @namespace Plugin
- * @extends Plugin.Base
- * @constructor
- */
-function PaginatorPlugin() {
-    PaginatorPlugin.superclass.constructor.apply(this, arguments);
-}
-
-/**
- * The identity of the plugin
- *
- * @property NAME
- * @type String
- * @default 'paginatorPlugin'
- * @static
- */
-PaginatorPlugin.NAME = 'pluginScrollViewPaginator';
-
-/**
- * The namespace on which the plugin will reside
- *
- * @property NS
- * @type String
- * @default 'pages'
- * @static
- */
-PaginatorPlugin.NS = 'pages';
-
-/**
- * The default attribute configuration for the plugin
- *
- * @property ATTRS
- * @type Object
- * @static
- */
-PaginatorPlugin.ATTRS = {
+YUI.add('paginator-plugin', function (Y, NAME) {
 
     /**
-     * CSS selector for a page inside the scrollview. The scrollview
-     * will snap to the closest page.
+     * Provides a plugin, which adds pagination support to ScrollView instances
      *
-     * @attribute selector
-     * @type {String}
+     * @module scrollview-paginator
      */
-    selector: {
-        value: null
-    },
+    var getClassName = Y.ClassNameManager.getClassName,
+        SCROLLVIEW = 'scrollview',
+        CLASS_HIDDEN = getClassName(SCROLLVIEW, 'hidden'),
+        CLASS_PAGED = getClassName(SCROLLVIEW, 'paged'),
+        UI = (Y.ScrollView) ? Y.ScrollView.UI_SRC : 'ui',
+        INDEX = 'index',
+        SCROLL_X = 'scrollX',
+        SCROLL_Y = 'scrollY',
+        TOTAL = 'total',
+        HOST = 'host',
+        BOUNDING_BOX = 'boundingBox',
+        CONTENT_BOX = 'contentBox',
+        SELECTOR = 'selector',
+        FLICK = 'flick',
+        DRAG = 'drag',
+        DIM_X = 'x',
+        DIM_Y = 'y',
+        AXIS = 'axis';
 
     /**
-     * The active page number for a paged scrollview
+     * Scrollview plugin that adds support for paging
      *
-     * @attribute index
-     * @type {Number}
-     * @default 0
+     * @class ScrollViewPaginator
+     * @namespace Plugin
+     * @extends Plugin.Base
+     * @constructor
      */
-    index: {
-        value: 0,
-        validator: function(val) {
-            return val >= 0 && val < this.get(TOTAL);
-        }
-    },
-
-    /**
-     * The total number of pages
-     *
-     * @attribute total
-     * @type {Number}
-     * @default 0
-     */
-    total: {
-        value: 0
-    },
-
-    // TODO
-    axis: {
-        value: 'x'
+    function PaginatorPlugin() {
+        PaginatorPlugin.superclass.constructor.apply(this, arguments);
     }
-};
-
-Y.extend(PaginatorPlugin, Y.Plugin.Base, {
 
     /**
-     * Designated initializer
+     * The identity of the plugin
      *
-     * @method initializer
+     * @property NAME
+     * @type String
+     * @default 'paginatorPlugin'
+     * @static
      */
-    initializer: function (config) {
-        var paginator = this,
-            host = paginator.get(HOST),
-            bb = host.get(BOUNDING_BOX),
-            cb = host.get(CONTENT_BOX),
-            hostFlick = host.get(FLICK),
-            padding = config.padding || paginator.padding;
-        
-        paginator.cards = [];
-        paginator.optimizeMemory = false;
-        paginator.padding = 1;
-        paginator._uiEnabled = true;
-        paginator._prevent = new Y.Do.Prevent();
-        paginator._cIndex = 0;
-
-        if (config.optimizeMemory !== undefined) {
-            paginator.optimizeMemory = config.optimizeMemory;
-        }
-
-        paginator.set(AXIS, config.axis);
-
-        // Don't allow flicks on the paginated axis
-        if (config.axis === DIM_X) {
-            hostFlick.axis = DIM_Y;
-            host.set(FLICK, hostFlick);
-        }
-        else if (config.axis === DIM_Y) {
-            hostFlick.axis = DIM_X;
-            host.set(FLICK, hostFlick);
-        }
-
-        paginator._bb = bb;
-        paginator._cb = cb;
-        paginator._host = host;
-
-        paginator.padding = padding;
-
-        // Event listeners        
-        paginator.after('indexChange', paginator._afterIndexChange);
-
-        // Method listeners
-        paginator.beforeHostMethod('scrollTo', paginator._onScrollTo);
-        paginator.beforeHostMethod('_mousewheel', paginator._beforeHostMousewheel);
-
-        paginator.afterHostMethod('_onGestureMoveEnd', paginator._gestureMoveEnd);
-        paginator.afterHostMethod('_uiDimensionsChange', paginator._afterHostUIDimensionsChange);
-        
-        paginator.afterHostEvent('render', paginator._afterHostRender);
-        paginator.afterHostEvent('scrollEnd', paginator._scrollEnded);
-    },
+    PaginatorPlugin.NAME = 'pluginScrollViewPaginator';
 
     /**
-     * After host render handler
+     * The namespace on which the plugin will reside
      *
-     * @method _afterHostRender
-     * @param {Event.Facade}
-        * @protected
+     * @property NS
+     * @type String
+     * @default 'pages'
+     * @static
      */
-    _afterHostRender: function (e) {
-        var paginator = this,
-            bb = paginator._bb,
-            host = paginator._host,
-            index = paginator._cIndex,
-            paginatorAxis = paginator.get(AXIS),
-            maxScrollX = paginator.cards[index].maxScrollX,
-            maxScrollY = paginator.cards[index].maxScrollY;
-
-        if (paginatorAxis === DIM_Y) {
-            host._maxScrollX = maxScrollX;
-        }
-        else if (paginatorAxis === DIM_X) {
-            host._maxScrollY = maxScrollY;
-        }
-
-        // Add the paginator class
-        bb.addClass(CLASS_PAGED);
-    },
+    PaginatorPlugin.NS = 'pages';
 
     /**
-     * After host _uiDimensionsChange
+     * The default attribute configuration for the plugin
      *
-     * @method _afterHostUIDimensionsChange
-     * @param {Event.Facade}
-     * @protected
+     * @property ATTRS
+     * @type Object
+     * @static
      */
-    _afterHostUIDimensionsChange: function(e) {
-        var paginator = this,
-            host = paginator._host,
-            bb = paginator._bb,
-            widgetWidth = bb.get('offsetWidth'),
-            widgetHeight = bb.get('offsetHeight'),
-            pageNodes = paginator._getPageNodes(),
-            size = pageNodes.size();
+    PaginatorPlugin.ATTRS = {
 
-        paginator.set(TOTAL, size);
+        /**
+         * CSS selector for a page inside the scrollview. The scrollview
+         * will snap to the closest page.
+         *
+         * @attribute selector
+         * @type {String}
+         */
+        selector: {
+            value: null
+        },
 
-        // Inefficient.  Should not reinitialize every card every syncUI
-        for(var i=0; i < size; i++) {
-            var node = pageNodes.item(i),
-                scrollWidth = node.get('scrollWidth'),
-                scrollHeight = node.get('scrollHeight'),
-                maxScrollX, maxScrollY;
+        /**
+         * The active page number for a paged scrollview
+         *
+         * @attribute index
+         * @type {Number}
+         * @default 0
+         */
+        index: {
+            value: 0,
+            validator: function (val) {
+                return val >= 0 && val < this.get(TOTAL);
+            }
+        },
 
-            if (scrollWidth < widgetWidth) {
-                maxScrollX = 0;
+        /**
+         * The total number of pages
+         *
+         * @attribute total
+         * @type {Number}
+         * @default 0
+         */
+        total: {
+            value: 0
+        },
+
+        // TODO
+        axis: {
+            value: DIM_X
+        }
+    };
+
+    Y.extend(PaginatorPlugin, Y.Plugin.Base, {
+
+        /**
+         * Designated initializer
+         *
+         * @method initializer
+         */
+        initializer: function (config) {
+            var paginator = this,
+                host = paginator.get(HOST),
+                bb = host.get(BOUNDING_BOX),
+                cb = host.get(CONTENT_BOX),
+                hostFlick = host.get(FLICK);
+
+            paginator.optimizeMemory = config.optimizeMemory || false;
+            paginator.padding = config.padding || 1;
+            paginator.set(AXIS, config.axis);
+
+            paginator._cIndex = 0;
+            paginator._prevent = new Y.Do.Prevent();
+            paginator.cards = [];
+
+            // Don't allow flicks on the paginated axis
+            if (config.axis === DIM_X) {
+                hostFlick.axis = DIM_Y;
+                host.set(FLICK, hostFlick);
+            } else if (config.axis === DIM_Y) {
+                hostFlick.axis = DIM_X;
+                host.set(FLICK, hostFlick);
             }
-            else {
-                maxScrollX = scrollWidth - widgetWidth;
+
+            paginator._bb = bb;
+            paginator._cb = cb;
+            paginator._host = host;
+
+            // Event listeners
+            paginator.after('indexChange', paginator._afterIndexChange);
+
+            // Method listeners
+            paginator.beforeHostMethod('scrollTo', paginator._onScrollTo);
+            paginator.beforeHostMethod('_mousewheel', paginator._beforeHostMousewheel);
+            paginator.afterHostMethod('_onGestureMoveEnd', paginator._gestureMoveEnd);
+            paginator.afterHostMethod('_uiDimensionsChange', paginator._afterHostUIDimensionsChange);
+            paginator.afterHostEvent('render', paginator._afterHostRender);
+            paginator.afterHostEvent('scrollEnd', paginator._scrollEnded);
+        },
+
+        /**
+         * After host render handler
+         *
+         * @method _afterHostRender
+         * @param {Event.Facade}
+         * @protected
+         */
+        _afterHostRender: function (e) {
+            var paginator = this,
+                bb = paginator._bb,
+                host = paginator._host,
+                index = paginator._cIndex,
+                paginatorAxis = paginator.get(AXIS),
+                maxScrollX = paginator.cards[index].maxScrollX,
+                maxScrollY = paginator.cards[index].maxScrollY;
+
+            if (paginatorAxis === DIM_Y) {
+                host._maxScrollX = maxScrollX;
+            } else if (paginatorAxis === DIM_X) {
+                host._maxScrollY = maxScrollY;
             }
-            
-            if (scrollHeight < widgetHeight) {
-                maxScrollY = 0;
+
+            // Add the paginator class
+            bb.addClass(CLASS_PAGED);
+
+            paginator._optimize();
+        },
+
+        /**
+         * After host _uiDimensionsChange
+         *
+         * @method _afterHostUIDimensionsChange
+         * @param {Event.Facade}
+         * @protected
+         */
+        _afterHostUIDimensionsChange: function (e) {
+            var paginator = this,
+                host = paginator._host,
+                bb = paginator._bb,
+                widgetWidth = bb.get('offsetWidth'),
+                widgetHeight = bb.get('offsetHeight'),
+                pageNodes = paginator._getPageNodes(),
+                size = pageNodes.size();
+
+            paginator.set(TOTAL, size);
+
+            // Inefficient. Should not reinitialize every card every syncUI
+            pageNodes.each(function (node, i) {
+                var scrollWidth = node.get('scrollWidth'),
+                    scrollHeight = node.get('scrollHeight'),
+                    maxScrollX = Math.max(0, scrollWidth - widgetWidth),
+                    maxScrollY = Math.max(0, scrollHeight - widgetHeight);
+
+                // Don't initialize any cards that already have been.
+                if (!paginator.cards[i]) {
+                    paginator.cards[i] = {
+                        maxScrollX: maxScrollX,
+                        maxScrollY: maxScrollY,
+                        node: node,
+                        scrollX: 0,
+                        scrollY: 0
+                    };
+                } else {
+                    paginator.cards[i].maxScrollX = maxScrollX;
+                    paginator.cards[i].maxScrollY = maxScrollY;
+                }
+
+            });
+        },
+
+        _onScrollTo: function (x, y, duration, easing, node) {
+            var paginator = this,
+                host = paginator._host,
+                gesture = host._gesture,
+                index = paginator._cIndex,
+                paginatorAxis = paginator.get(AXIS),
+                gestureAxis;
+
+            if (gesture) {
+                gestureAxis = gesture.axis;
+
+                if (gestureAxis === DIM_Y) {
+                    x = null;
+                } else {
+                    y = null;
+                }
+
+                // If they are scrolling against the specified axis, pull out the card as the node to have its own offset
+                if (paginatorAxis !== gestureAxis) {
+                    node = paginator.cards[index].node;
+                }
             }
-            else {
-                maxScrollY = scrollHeight - widgetHeight;
+
+            // Now run scrollTo with the modified values
+            host._scrollTo(x, y, duration, easing, node);
+
+            return paginator._prevent;
+        },
+
+        /**
+         * Executed after host._gestureMoveEnd
+         *
+         * @method _onGestureMoveEnd
+         * @protected
+         */
+        _gestureMoveEnd: function (e) {
+            var paginator = this,
+                host = paginator._host,
+                gesture = host._gesture,
+                paginatorAxis = paginator.get(AXIS),
+                gestureAxis = gesture && gesture.axis;
+
+            if (gestureAxis === paginatorAxis) {
+                if (gesture[(gestureAxis === DIM_X ? 'deltaX' : 'deltaY')] > 0) {
+                    paginator[host.rtl ? 'prev' : 'next']();
+                } else {
+                    paginator[host.rtl ? 'next' : 'prev']();
+                }
             }
-            
-            // Don't initialize any cards that already have been.
-            if (!paginator.cards[i]) {
-                paginator.cards[i] = {
-                    maxScrollX: maxScrollX,
-                    maxScrollY: maxScrollY,
-                    node: node,
-                    scrollX: 0,
-                    scrollY: 0
-                };
+        },
+
+        /**
+         * Executed to respond to the mousewheel event, by over-riding the default mousewheel method.
+         *
+         * @method _mousewheel
+         * @param {Event.Facade}
+         * @protected
+         */
+        _beforeHostMousewheel: function (e) {
+            var paginator = this,
+                host = paginator._host,
+                bb = host._bb,
+                isForward = e.wheelDelta < 0, // down (negative) is forward. @TODO Should revisit.
+                paginatorAxis = paginator.get(AXIS);
+
+            // Set the axis for this event.
+            // @TODO: This is hacky, it's not a gesture. Find a better way
+            host._gesture = {
+                axis: DIM_Y
+            };
+
+            // Only if the mousewheel event occurred on a DOM node inside the BB
+            if (bb.contains(e.target) && paginatorAxis === DIM_Y) {
+
+                if (isForward) {
+                    paginator.next();
+                } else {
+                    paginator.prev();
+                }
+
+                // prevent browser default behavior on mousewheel
+                e.preventDefault();
+
+                // Block host._mousewheel from running
+                return paginator._prevent;
+            }
+        },
+
+        /**
+         * scrollEnd handler to run some cleanup operations
+         *
+         * @method _scrollEnded
+         * @param {Event.Facade}
+         * @protected
+         */
+        _scrollEnded: function (e) {
+            var paginator = this,
+                host = this._host,
+                index = paginator._cIndex,
+                scrollX = host.get('scrollX'),
+                scrollY = host.get('scrollY'),
+                paginatorAxis = paginator.get(AXIS);
+
+            if (paginatorAxis === DIM_Y) {
+                paginator.cards[index].scrollX = scrollX;
             } else {
-                paginator.cards[i].maxScrollX = maxScrollX;
-                paginator.cards[i].maxScrollY = maxScrollY;
+                paginator.cards[index].scrollY = scrollY;
             }
 
-        };
-    },
+            paginator._optimize();
+        },
 
-    _onScrollTo: function (x, y, duration, easing, node) {
-        var paginator = this,
-            host = paginator._host,
-            gesture = host._gesture,
-            index = paginator._cIndex,
-            paginatorAxis = paginator.get(AXIS),
-            gestureAxis;
-
-        if (gesture !== undefined) {
-            gestureAxis = gesture.axis;
+        /**
+         * index attr change handler
+         *
+         * @method _afterIndexChange
+         * @param {Event.Facade}
+         * @protected
+         */
+        _afterIndexChange: function (e) {
+            var paginator = this,
+                host = this._host,
+                index = e.newVal,
+                maxScrollX = paginator.cards[index].maxScrollX,
+                maxScrollY = paginator.cards[index].maxScrollY,
+                gesture = host._gesture,
+                gestureAxis = gesture && gesture.axis;
 
             if (gestureAxis === DIM_Y) {
-                x = null;
-            }
-            else {
-                y = null;
-            }
-
-            // If they are scrolling against the specified axis, pull out the card as the node to have its own offset
-            if (paginatorAxis !== gestureAxis) {
-                node = paginator.cards[index].node;
-            }
-        }
-
-        // Now run scrollTo with the modified values
-        host._scrollTo(x, y, duration, easing, node);
-
-        return paginator._prevent;
-    },
-
-    /**
-     * Executed after host._gestureMoveEnd
-     *
-     * @method _onGestureMoveEnd
-     * @protected
-     */
-    _gestureMoveEnd: function (e) {
-        var paginator = this,
-            host = paginator._host,
-            gesture = host._gesture,
-            paginatorAxis = paginator.get(AXIS),
-            gestureAxis = gesture.axis,
-            isForward = (gestureAxis === DIM_X ? gesture.deltaX > 0 : gesture.deltaY > 0),
-            index = paginator._cIndex,
-            rtl = host.rtl;
-
-        paginator._uiDisable();
-
-        // Flip desired direction if the page is set to RtL
-        if (rtl) {
-            isForward = !isForward;
-        }
-
-        // Was the gesture on the paginated axis?
-        if (gestureAxis === paginatorAxis) {
-            if (isForward) {
-                paginator.next();
-            }
-            else {
-                paginator.prev();
-            }
-        }
-    },
-
-    /**
-     * Executed to respond to the mousewheel event, by over-riding the default mousewheel method.
-     *
-     * @method _mousewheel
-     * @param {Event.Facade}
-     * @protected
-     */
-    _beforeHostMousewheel: function (e) {
-        var paginator = this,
-            host = paginator._host,
-            bb = host._bb,
-            isForward = e.wheelDelta < 0, // down (negative) is forward.  @TODO Should revisit.
-            paginatorAxis = paginator.get(AXIS);
-
-        // Set the axis for this event.
-        // @TODO: This is hacky, it's not a gesture.  Find a better way
-        host._gesture = {
-            axis: DIM_Y
-        };
-
-        // Only if the mousewheel event occurred on a DOM node inside the BB
-        if (bb.contains(e.target) && paginatorAxis === DIM_Y){
-
-            if (isForward) {
-                paginator.next();
-            }
-            else {
-                paginator.prev();
+                host._maxScrollX = maxScrollX;
+                host.set('scrollX', paginator.cards[index].scrollX, { src: 'ui' });
+            } else if (gestureAxis === DIM_X) {
+                host._maxScrollY = maxScrollY;
+                host.set('scrollY', paginator.cards[index].scrollY, { src: 'ui' });
             }
 
-            // prevent browser default behavior on mousewheel
-            e.preventDefault();
+            // Cache the new index value
+            paginator._cIndex = index;
 
-            // Block host._mousewheel from running
-            return paginator._prevent;
+            if (e.src !== UI) {
+                paginator.scrollToIndex(index);
+            }
+        },
+
+        /**
+         * Improves performance by hiding page nodes not near the viewport
+         *
+         * @method _optimize
+         * @protected
+         */
+        _optimize: function () {
+            var paginator = this,
+                host = paginator._host,
+                optimizeMemory = paginator.optimizeMemory,
+                currentIndex = paginator._cIndex,
+                pageNodes;
+
+            if (!optimizeMemory) {
+                return false;
+            }
+
+            // Show the pages in/near the viewport & hide the rest
+            pageNodes = paginator._getStage(currentIndex);
+            paginator._showNodes(pageNodes.visible);
+            paginator._hideNodes(pageNodes.hidden);
+        },
+
+        /**
+         * Determines which nodes should be visible, and which should be hidden.
+         *
+         * @method _getStage
+         * @param index {Number} The page index # intended to be in focus.
+         * @returns {object}
+         * @protected
+         */
+        _getStage: function (index) {
+            var padding = this.padding,
+                pageNodes = this._getPageNodes(),
+                pageCount = this.get(TOTAL),
+                start = Math.max(0, index - padding),
+                end = Math.min(pageCount, index + 1 + padding); // noninclusive
+            return {
+                visible: pageNodes.splice(start, end - start),
+                hidden: pageNodes
+            };
+        },
+
+        /**
+         * A utility method to show node(s)
+         *
+         * @method _showNodes
+         * @param nodeList {nodeList}
+         * @protected
+         */
+        _showNodes: function (nodeList) {
+            if (nodeList) {
+                nodeList.removeClass(CLASS_HIDDEN).setStyle('visibility', '');
+            }
+        },
+
+        /**
+         * A utility method to hide node(s)
+         *
+         * @method _hideNodes
+         * @param nodeList {nodeList}
+         * @protected
+         */
+        _hideNodes: function (nodeList) {
+            if (nodeList) {
+                nodeList.addClass(CLASS_HIDDEN).setStyle('visibility', 'hidden');
+            }
+        },
+
+        /**
+         * Gets a nodeList for the "pages"
+         *
+         * @method _getPageNodes
+         * @protected
+         * @returns {nodeList}
+         */
+        _getPageNodes: function () {
+            var paginator = this,
+                host = paginator._host,
+                cb = host.get(CONTENT_BOX),
+                pageSelector = paginator.get(SELECTOR),
+                pageNodes = pageSelector ? cb.all(pageSelector) : cb.get('children');
+            return pageNodes;
+        },
+
+        /**
+         * Scroll to the next page in the scrollview, with animation
+         *
+         * @method next
+         */
+        next: function () {
+            var paginator = this,
+                index = paginator._cIndex,
+                target = index + 1,
+                total = this.get(TOTAL);
+
+            if (target >= total) {
+                return;
+            }
+
+            paginator.set(INDEX, target);
+        },
+
+        /**
+         * Scroll to the previous page in the scrollview, with animation
+         *
+         * @method prev
+         */
+        prev: function () {
+            var paginator = this,
+                index = paginator._cIndex,
+                target = index - 1;
+
+            if (target < 0) {
+                return;
+            }
+
+            paginator.set(INDEX, target);
+        },
+
+        // For backwards compatibility
+        scrollTo: function () {
+            return this.scrollToIndex.apply(this, arguments);
+        },
+
+        /**
+         * Scroll to a given page in the scrollview
+         *
+         * @method scrollToIndex
+         * @param index {Number} The index of the page to scroll to
+         * @param duration {Number} The number of ms the animation should last
+         * @param easing {String} The timing function to use in the animation
+         */
+        scrollToIndex: function (index, duration, easing) {
+
+            var paginator = this,
+                host = paginator._host,
+                pageNode = paginator._getPageNodes().item(index),
+                scrollAxis = (paginator.get(AXIS) === DIM_X ? SCROLL_X : SCROLL_Y),
+                scrollOffset = pageNode.get(scrollAxis === SCROLL_X ? 'offsetLeft' : 'offsetTop');
+
+            duration = (duration !== undefined) ? duration : PaginatorPlugin.TRANSITION.duration;
+            easing = (easing !== undefined) ? duration : PaginatorPlugin.TRANSITION.easing;
+
+            paginator._showNodes(pageNode);
+            host.set(scrollAxis, scrollOffset, {
+                duration: duration,
+                easing: easing
+            });
         }
-    },
+    });
 
     /**
-     * scrollEnd handler to run some cleanup operations
+     * The default snap to current duration and easing values used on scroll end.
      *
-     * @method _scrollEnded
-     * @param {Event.Facade}
-        * @protected
+     * @property SNAP_TO_CURRENT
+     * @static
      */
-    _scrollEnded: function (e) {
-        var paginator = this,
-            host = this._host,
-            index = paginator._cIndex,
-            scrollX = host.get('scrollX'),
-            scrollY = host.get('scrollY'),
-            paginatorAxis = paginator.get(AXIS);
+    PaginatorPlugin.TRANSITION = {
+        duration: 300,
+        easing: 'ease-out'
+    };
 
-        if (paginatorAxis === DIM_Y) {
-            paginator.cards[index].scrollX = scrollX;
-        }
-        else {
-            paginator.cards[index].scrollY = scrollY;
-        }
+    Y.namespace('Plugin').ScrollViewPaginator = PaginatorPlugin;
 
-        // paginator._optimize();
-        paginator._uiEnable();
-        
-        // Do some cleanup
-        // The _gesture object shouldn't be left around, can cause some confusion if it is accessed after the gesture process is complete
-        // @todo: Move to host
-        // delete host._gesture;
-    },
-
-    /**
-     * index attr change handler
-     *
-     * @method _afterIndexChange
-     * @param {Event.Facade}
-     * @protected
-     */
-    _afterIndexChange: function (e) {
-        var paginator = this,
-            host = this._host,
-            index = e.newVal,
-            maxScrollX = paginator.cards[index].maxScrollX,
-            maxScrollY = paginator.cards[index].maxScrollY,
-            gesture = host._gesture,
-            gestureAxis = gesture.axis;
-
-        // Update the scrollY attribute with the current card's scrollY
-        if (gestureAxis === DIM_Y) {
-            // Set the max width host can scroll to
-            host._maxScrollX = maxScrollX;
-            host.set('scrollX', paginator.cards[index].scrollX, {src: 'ui'});   
-        }
-        else {
-            // Set the max height host can scroll to
-            host._maxScrollY = maxScrollY;
-            host.set('scrollY', paginator.cards[index].scrollY, {src: 'ui'});   
-        }
-
-        // Cache the new index value
-        paginator._cIndex = index;
-
-        if(e.src !== UI) {
-            paginator.scrollToIndex(index);
-        }
-    },
-
-    /**
-     * Improves performance by hiding page nodes not near the viewport
-     *
-     * @method _optimize
-     * @protected
-     */
-    _optimize: function() {
-        var paginator = this,
-            host = paginator._host,
-            optimizeMemory = paginator.optimizeMemory,
-            currentIndex = paginator._cIndex,
-            pageNodes;
-
-        if (!optimizeMemory) {
-            return false;
-        }
-
-        // Show the pages in/near the viewport & hide the rest
-        pageNodes = paginator._getStage(currentIndex);
-        paginator._showNodes(pageNodes.visible);
-        paginator._hideNodes(pageNodes.hidden);
-        // paginator.scrollToIndex(currentIndex, 0); // Needed if doing display:none for optimizeMemory
-    },
-
-    /**
-     * Determines which nodes should be visible, and which should be hidden.
-     *
-     * @method _getStage
-     * @param index {Number} The page index # intended to be in focus.
-     * @returns {object}
-     * @protected
-     */
-    _getStage : function (index) {
-        var paginator = this,
-            host = paginator._host,
-            padding = paginator.padding,
-            visibleCount = padding + 1 + padding, // Before viewport | viewport | after viewport
-            pageNodes = paginator._getPageNodes(),
-            pageCount = paginator.get(TOTAL),
-            start, visible, hidden;
-
-        // Somehow this works.  @TODO cleanup
-        start = Math.max(index-padding, 0);
-        if (start+visibleCount > pageCount) {
-            start = start-(start+visibleCount-pageCount);
-        }
-
-        visible = pageNodes.splice(start, visibleCount);
-        hidden = pageNodes; // everything leftover
-
-        return {
-            visible: visible,
-            hidden: hidden
-        };
-    },
-
-    /**
-     * A utility method to show node(s)
-     *
-     * @method _showNodes
-     * @param nodeList {nodeList}
-     * @protected
-     */
-    _showNodes : function (nodeList) {
-        if (nodeList) {
-            nodeList.removeClass(CLASS_HIDDEN).setStyle('visibility', '');
-        }
-    },
-
-    /**
-     * A utility method to hide node(s)
-     *
-     * @method _hideNodes
-     * @param nodeList {nodeList}
-     * @protected
-     */
-    _hideNodes : function (nodeList) {
-        if (nodeList) {
-            nodeList.addClass(CLASS_HIDDEN).setStyle('visibility', 'hidden');
-        }
-    },
-
-    /**
-     * Enable UI interaction with the widget
-     *
-     * @method _uiEnable
-     * @protected
-     */
-    _uiEnable: function () {
-        this._uiEnabled = true;
-    },
-
-    /**
-     * Disable UI interaction with the widget
-     *
-     * @method _uiDisable
-     * @protected
-     */
-    _uiDisable: function () {
-        this._uiEnabled = false;
-    },
-
-    /**
-     * Gets a nodeList for the "pages"
-     *
-     * @method _getPageNodes
-     * @protected
-     * @returns {nodeList}
-     */
-    _getPageNodes: function() {
-        var paginator = this,
-            host = paginator._host,
-            cb = host.get(CONTENT_BOX),
-            pageSelector = paginator.get(SELECTOR),
-            pageNodes = pageSelector ? cb.all(pageSelector) : cb.get("children");
-
-        return pageNodes;
-    },
-
-    /**
-     * Scroll to the next page in the scrollview, with animation
-     *
-     * @method next
-     */
-    next: function () {
-        var paginator = this,
-            index = paginator._cIndex,
-            target = index + 1;
-
-        paginator.set(INDEX, target);
-    },
-
-    /**
-     * Scroll to the previous page in the scrollview, with animation
-     *
-     * @method prev
-     */
-    prev: function () {
-        var paginator = this,
-            index = paginator._cIndex,
-            target = index - 1;
-
-        if (target < 0) {
-            target = 0;
-        }
-        
-        paginator.set(INDEX, target);
-    },
-
-    // For backwards compatibility
-    scrollTo: function () {
-        return this.scrollToIndex.apply(this, arguments);
-    },
-
-    /**
-     * Scroll to a given page in the scrollview
-     *
-     * @method scrollToIndex
-     * @param index {Number} The index of the page to scroll to
-     * @param duration {Number} The number of ms the animation should last
-     * @param easing {String} The timing function to use in the animation
-     */
-    scrollToIndex: function (index, duration, easing) {
-        var paginator = this,
-            host = paginator._host,
-            axis = paginator.get(AXIS),
-            pageNodes = paginator._getPageNodes(),
-            offsetProperty = (axis === DIM_X ? "offsetLeft" : "offsetTop"),
-            scrollAxis = (axis === DIM_X ? SCROLL_X : SCROLL_Y),
-            scrollVal;
-
-        duration = (duration !== undefined) ? duration : PaginatorPlugin.TRANSITION.duration;
-        easing = (easing !== undefined) ? duration : PaginatorPlugin.TRANSITION.easing;
-
-        // Make sure the target node is visible
-        paginator._showNodes(pageNodes.item(index));
-
-        scrollVal = pageNodes.item(index).get(offsetProperty);
-
-        host.set(scrollAxis, scrollVal, {
-            duration: duration,
-            easing: easing
-        });
-    }
-});
-
-/**
- * The default snap to current duration and easing values used on scroll end.
- *
- * @property SNAP_TO_CURRENT
- * @static
- */
-PaginatorPlugin.TRANSITION = {
-    duration : 300,
-    easing : 'ease-out'
-};
-
-Y.namespace('Plugin').ScrollViewPaginator = PaginatorPlugin;
-
-});
+}, null, { requires: ['classnamemanager', 'plugin'] });
