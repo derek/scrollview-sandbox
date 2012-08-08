@@ -181,6 +181,8 @@ YUI.add('paginator-plugin', function (Y, NAME) {
 
             // Add the paginator class
             bb.addClass(CLASS_PAGED);
+
+            paginator._optimize();
         },
 
         /**
