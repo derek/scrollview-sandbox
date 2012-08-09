@@ -154,13 +154,12 @@ YUI.add('scrollview-base', function (Y, NAME) {
         _bindMousewheel: function (mousewheel) {
             var sv = this,
                 axisY = sv.get(AXIS_Y);
+                
             // Only enable for vertical scrollviews
-            if (axisY) {
-                if (mousewheel) {
-                    Y.one(DOC).on(MOUSEWHEEL, Y.bind(sv._mousewheel, sv));
-                } else {
-                    sv._bb.detach(MOUSEWHEEL + '|*');
-                }
+            if (mousewheel && axisY) {
+                Y.one(DOC).on(MOUSEWHEEL, Y.bind(sv._mousewheel, sv));
+            } else {
+                sv._bb.detach(MOUSEWHEEL + '|*');
             }
         },
 
