@@ -689,6 +689,7 @@ YUI.add('scrollview-base', function (Y, NAME) {
                     sv.set(SCROLL_Y, newY);
                 }
 
+                // TODO: maybe use requestAnimationFrame instead
                 sv._flickAnim = Y.later(step, sv, '_flickFrame', [velocity]);
             }
         },
@@ -985,9 +986,9 @@ YUI.add('scrollview-base', function (Y, NAME) {
          * @property FRAME_STEP
          * @type Number
          * @static
-         * @default 30
+         * @default 16
          */
-        FRAME_STEP: 30,
+        FRAME_STEP: 16,
 
         /**
          * The default easing used when animating the flick
