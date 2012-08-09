@@ -88,8 +88,8 @@ YUI.add('scrollview-base', function (Y, NAME) {
             // Note: You can find _bindMousewheel() inside syncUI(), becuase it depends on UI details
             sv._bindAttrs();
 
-            // TODO: Ugly.  Fix
-            sv.rtl = (Y.one('html').getAttribute('dir').toLowerCase() === 'rtl') ? true : false;
+            // get text direction on or inherited by scrollview node
+            sv.rtl = (sv._cb.getComputedStyle('direction') === 'rtl');
         },
 
         /**
