@@ -326,8 +326,8 @@ YUI.add('paginator-plugin', function (Y, NAME) {
             var paginator = this,
                 host = this._host,
                 index = paginator._cIndex,
-                scrollX = host.get('scrollX'),
-                scrollY = host.get('scrollY'),
+                scrollX = host.get(SCROLL_X),
+                scrollY = host.get(SCROLL_Y),
                 paginatorAxis = paginator.get(AXIS);
 
             if (paginatorAxis === DIM_Y) {
@@ -357,10 +357,10 @@ YUI.add('paginator-plugin', function (Y, NAME) {
 
             if (gestureAxis === DIM_Y) {
                 host._maxScrollX = maxScrollX;
-                host.set('scrollX', paginator.cards[index].scrollX, { src: 'ui' });
+                host.set(SCROLL_X, paginator.cards[index].scrollX, { src: UI });
             } else if (gestureAxis === DIM_X) {
                 host._maxScrollY = maxScrollY;
-                host.set('scrollY', paginator.cards[index].scrollY, { src: 'ui' });
+                host.set(SCROLL_Y, paginator.cards[index].scrollY, { src: UI });
             }
 
             // Cache the new index value
