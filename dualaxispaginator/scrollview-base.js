@@ -88,8 +88,8 @@ YUI.add('scrollview-base', function (Y, NAME) {
             // Note: You can find _bindMousewheel() inside syncUI(), becuase it depends on UI details
             sv._bindAttrs();
 
-            // TODO: Ugly.  Fix
-            sv.rtl = (Y.one('html').getAttribute('dir').toLowerCase() === 'rtl') ? true : false;
+            // get text direction on or inherited by scrollview node
+            sv.rtl = (sv._cb.getComputedStyle('direction') === 'rtl');
         },
 
         /**
@@ -154,7 +154,7 @@ YUI.add('scrollview-base', function (Y, NAME) {
         _bindMousewheel: function (mousewheel) {
             var sv = this,
                 axisY = sv.get(AXIS_Y);
-                
+
             // Only enable for vertical scrollviews
             if (mousewheel && axisY) {
                 Y.one(DOC).on(MOUSEWHEEL, Y.bind(sv._mousewheel, sv));
@@ -321,6 +321,7 @@ YUI.add('scrollview-base', function (Y, NAME) {
 
             sv.set(SCROLL_X, x, { src: 'ui' });
             sv.set(SCROLL_Y, y, { src: 'ui' });
+
             sv.scrollTo(x, y, duration, easing, node);
         },
 
@@ -688,6 +689,7 @@ YUI.add('scrollview-base', function (Y, NAME) {
                     sv.set(SCROLL_Y, newY);
                 }
 
+                // TODO: maybe use requestAnimationFrame instead
                 sv._flickAnim = Y.later(step, sv, '_flickFrame', [velocity]);
             }
         },
@@ -770,12 +772,11 @@ YUI.add('scrollview-base', function (Y, NAME) {
          */
         _afterScrollChange: function (e) {
             var sv = this,
-                gesture = sv._gesture,
                 duration = e.duration,
                 easing = e.easing,
                 val = e.newVal;
 
-            if (e.src !== UI) {
+            if (e.src !== ScrollView.UI_SRC) {
                 if (e.attrName === SCROLL_X) {
                     sv.scrollTo(val, sv.get(SCROLL_Y), duration, easing);
                 } else {
@@ -985,9 +986,9 @@ YUI.add('scrollview-base', function (Y, NAME) {
          * @property FRAME_STEP
          * @type Number
          * @static
-         * @default 30
+         * @default 16
          */
-        FRAME_STEP: 30,
+        FRAME_STEP: 16,
 
         /**
          * The default easing used when animating the flick
