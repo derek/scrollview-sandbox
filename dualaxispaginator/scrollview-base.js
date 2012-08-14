@@ -225,6 +225,8 @@ YUI.add('scrollview-base', function (Y, NAME) {
                 height = scrollDims.offsetHeight,
                 scrollWidth = scrollDims.scrollWidth,
                 scrollHeight = scrollDims.scrollHeight,
+                axisX = sv.get(AXIS_X),
+                axisY = sv.get(AXIS_Y),
                 rtl = sv.rtl;
 
             sv._minScrollX = (rtl) ? -(scrollWidth - width) : 0;
@@ -233,6 +235,14 @@ YUI.add('scrollview-base', function (Y, NAME) {
             sv._maxScrollY = scrollHeight - height;
             sv._scrollWidth = scrollWidth;
             sv._scrollHeight = scrollHeight;
+
+            if (axisX) {
+                bb.addClass(CLASS_NAMES.horizontal);
+            }
+
+            if (axisY) {
+                bb.addClass(CLASS_NAMES.vertical);
+            }
 
             /**
              * Internal state, defines the maximum amount that the scrollview can be scrolled along the Y axis
