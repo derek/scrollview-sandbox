@@ -302,7 +302,7 @@ YUI.add('scrollview-base', function (Y, NAME) {
          * @param y {Number} The y-position to move to
          * @private
          */
-        _moveTo: function (node, x, y) {
+        _moveTo: function (x, y, node) {
             var sv = this;
 
             if (x) {
@@ -424,7 +424,7 @@ YUI.add('scrollview-base', function (Y, NAME) {
             if (duration !== 0) {
                 sv._animateTo(x, y, duration, easing, node); // x, y, duration, easing, node
             } else {
-                sv._moveTo(node, x, y);
+                sv._moveTo(x, y, node);
             }
         },
 
@@ -440,7 +440,7 @@ YUI.add('scrollview-base', function (Y, NAME) {
         _transform: function (x, y) {
             // TODO: Would we be better off using a Matrix for this?
             // TODO: Better to use separate x, y, and z, or combined into a single translate()?
-            
+
             var prop = '';
 
             if (x !== null) {
