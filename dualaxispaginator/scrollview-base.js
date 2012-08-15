@@ -303,6 +303,15 @@ YUI.add('scrollview-base', function (Y, NAME) {
          * @private
          */
         _moveTo: function (node, x, y) {
+            var sv = this;
+
+            if (x) {
+                x = -(x);
+            }
+            if (y) {
+                y = -(y);
+            }
+
             if (NATIVE_TRANSITIONS) {
                 node.setStyle('transform', this._transform(x, y));
             } else {
@@ -313,7 +322,9 @@ YUI.add('scrollview-base', function (Y, NAME) {
 
         /**
          * Utility method, to animate the given element to the given xy position
-         *
+         * 
+         * @TODO Merge with _moveTo
+         * 
          * @method _animateTo
          * @param x {Number} The x-position to move to
          * @param y {Number} The y-position to move to
@@ -323,16 +334,47 @@ YUI.add('scrollview-base', function (Y, NAME) {
          * @private
          */
         _animateTo: function (x, y, duration, easing, node) {
-            var sv = this;
+            var sv = this,
+                callback = sv._boundScollEnded,
+                transition;
+
+            node = node || sv._cb;
+
+            if (x !== null) {
+                sv.set(SCROLL_X, x, {src:UI});
+                y = sv.get(SCROLL_Y);
+            }
+
+            if (y !== null) {
+                sv.set(SCROLL_Y, y, {src:UI});
+                x = sv.get(SCROLL_X);
+            }
+
+            // Inverse the coordinates
+            x = -(x);
+            y = -(y);
 
             duration = duration || ScrollView.SNAP_DURATION;
             easing = easing || ScrollView.SNAP_EASING;
-            node = node || sv._cb;
 
-            sv.set(SCROLL_X, x, { src: 'ui' });
-            sv.set(SCROLL_Y, y, { src: 'ui' });
+            transition = {
+                easing: easing,
+                duration: duration / 1000
+            };
 
-            sv.scrollTo(x, y, duration, easing, node);
+            if (NATIVE_TRANSITIONS) {
+                transition.transform = sv._transform(x, y);
+            }
+            else {
+                transition.left = x + PX;
+                transition.top = y + PX;
+            }
+
+            if (!callback) {
+                callback = sv._boundScollEnded = Y.bind(sv._onTransEnd, sv);
+            }
+
+            node.transition(transition, callback);
         },
 
         /**
@@ -368,13 +410,7 @@ YUI.add('scrollview-base', function (Y, NAME) {
 
             var sv = this,
                 cb = sv._cb,
-                xSet = (x !== null),
-                ySet = (y !== null),
-                xMove = (xSet) ? x * -1 : 0,
-                yMove = (ySet) ? y * -1 : 0,
-                TRANS = ScrollView._TRANSITION,
-                callback = sv._boundScollEnded,
-                transition;
+                TRANS = ScrollView._TRANSITION;
 
             duration = duration || 0;
             easing = easing || ScrollView.EASING;
@@ -386,25 +422,9 @@ YUI.add('scrollview-base', function (Y, NAME) {
             }
 
             if (duration !== 0) {
-                transition = {
-                    easing: easing,
-                    duration: duration / 1000
-                };
-
-                if (NATIVE_TRANSITIONS) {
-                    transition.transform = sv._transform(xMove, yMove);
-                } else {
-                    if (xSet) { transition.left = xMove + PX; }
-                    if (ySet) { transition.top = yMove + PX; }
-                }
-
-                if (!callback) {
-                    callback = sv._boundScollEnded = Y.bind(sv._onTransEnd, sv);
-                }
-
-                node.transition(transition, callback);
+                sv._animateTo(x, y, duration, easing, node); // x, y, duration, easing, node
             } else {
-                sv._moveTo(node, xMove, yMove);
+                sv._moveTo(node, x, y);
             }
         },
 
@@ -419,10 +439,22 @@ YUI.add('scrollview-base', function (Y, NAME) {
          */
         _transform: function (x, y) {
             // TODO: Would we be better off using a Matrix for this?
-            var prop = 'translate(' + x + 'px, ' + y + 'px)';
+            // TODO: Better to use separate x, y, and z, or combined into a single translate()?
+            
+            var prop = '';
+
+            if (x !== null) {
+                prop += ' translateX(' + x + 'px)';
+            }
+
+            if (y !== null) {
+                prop += ' translateY(' + y + 'px)';
+            }
+
             if (this._forceHWTransforms) {
                 prop += ' translateZ(0)';
             }
+
             return prop;
         },
 
@@ -440,6 +472,9 @@ YUI.add('scrollview-base', function (Y, NAME) {
              * @event scrollEnd
              * @param e {EventFacade} The default event facade.
              */
+            // TODO: move elsewhere
+            var sv = this;
+
             this.fire(EV_SCROLL_END);
         },
 
@@ -682,17 +717,20 @@ YUI.add('scrollview-base', function (Y, NAME) {
             if (sv._isOOB()) {
                 // If we're past an edge, bounce back
                 sv._afterOOB();
-            } else if (Math.abs(velocity).toFixed(4) <= 0.015) {
+            }
+            else if (Math.abs(velocity).toFixed(4) <= 0.015) {
                 // If the velocity gets slow enough, just stop
                 sv._onTransEnd();
-            } else {
+            }
+            else {
                 // Or, animate another frame
                 if (axis === DIM_X && axisX) {
                     if (newX < minX || newX > maxX) {
                         velocity *= bounce;
                     }
                     sv.set(SCROLL_X, newX);
-                } else if (axis === DIM_Y && axisY) {
+                }
+                else if (axis === DIM_Y && axisY) {
                     if (newY < minY || newY > maxY) {
                         velocity *= bounce;
                     }
@@ -764,11 +802,16 @@ YUI.add('scrollview-base', function (Y, NAME) {
                 maxX = sv._maxScrollX,
                 maxY = sv._maxScrollY,
                 newY = _constrain(currentY, minY, maxY),
-                newX = _constrain(currentX, minX, maxX);
+                newX = _constrain(currentX, minX, maxX),
+                transition = ScrollView.SNAP_DURATION;
 
-            if (newX !== currentX || newY !== currentY) {
-                sv._animateTo(newX, newY);
-            } else {
+            if (newX !== currentX) {
+                sv.scrollTo(newX, null, transition);
+            }
+            else if (newY !== currentY) {
+                sv.scrollTo(null, newY, transition);
+            }
+            else {
                 sv._onTransEnd();
             }
         },
