@@ -322,11 +322,13 @@ YUI.add('scrollview-base', function (Y, NAME) {
             node = node || cb;
 
             if (x !== null) {
+                x = _constrain(x, sv._minScrollX, sv._maxScrollX);
                 sv.set(SCROLL_X, x, {src:UI});
                 newX = -(x);
             }
 
             if (y !== null) {
+                y = _constrain(y, sv._minScrollY, sv._maxScrollY);
                 sv.set(SCROLL_Y, y, {src:UI});
                 newY = -(y);
             }
