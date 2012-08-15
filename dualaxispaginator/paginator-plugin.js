@@ -238,6 +238,7 @@ YUI.add('paginator-plugin', function (Y, NAME) {
             if (gesture) {
                 gestureAxis = gesture.axis;
 
+                // Null the opposite axis so it won't be modified by host.scrollTo
                 if (gestureAxis === DIM_Y) {
                     x = null;
                 } else {
@@ -250,10 +251,7 @@ YUI.add('paginator-plugin', function (Y, NAME) {
                 }
             }
 
-            // Now run scrollTo with the modified values
-            host._scrollTo(x, y, duration, easing, node);
-
-            return paginator._prevent;
+            return new Y.Do.AlterArgs("new args", [x, y, duration, easing, node]);
         },
 
         /**

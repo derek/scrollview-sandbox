@@ -47,7 +47,7 @@
         </style>
         
         <script type="text/javascript" charset="utf-8">
-        var s;
+        var s, k;
         YUI({
             debug: true,
             filter:"raw",
@@ -62,7 +62,7 @@
             }
         }).use('paginator-plugin', function(Y) {
 
-            var scrollview = new Y.ScrollView({
+            s = new Y.ScrollView({
                 srcNode:"#content",
                 width:400,
                 height:400,
@@ -76,31 +76,29 @@
                 plugins: [{
                     fn:Y.Plugin.ScrollViewPaginator,
                     cfg:{
-                        optimizeMemory: true,
+                        optimizeMemory: false,
                         axis: 'x',
                         selector:">ul>li"
                     }
                 }],
             });
-            scrollview.render();
+            s.render();
 
-            scrollview.after(['scrollXChange', 'scrollYChange'], function(){
-                var x = scrollview.get('scrollX');
-                var y = scrollview.get('scrollY');
+            s.after(['scrollXChange', 'scrollYChange'], function(){
+                var x = s.get('scrollX');
+                var y = s.get('scrollY');
                 Y.one('#valX').set('innerHTML', x);
                 Y.one('#valY').set('innerHTML', y);
             });
 
-            if (scrollview.pages) {
-                scrollview.pages.after('indexChange', function(e){
+            if (s.pages) {
+                s.pages.after('indexChange', function(e){
                     Y.one('#valIndex').set('innerHTML', e.newVal);
                 });
             }
             
-            // s = scrollview;
             
-            
-            new Y.ScrollView({
+            k = new Y.ScrollView({
                 srcNode:"#kittens",
                 optimize: false,
                 width:400,
@@ -114,7 +112,7 @@
                 plugins: [{
                     fn:Y.Plugin.ScrollViewPaginator,
                     cfg:{
-                        optimizeMemory: true,
+                        optimizeMemory: false,
                         axis: 'y',
                         selector:">ul>li"
                     }
