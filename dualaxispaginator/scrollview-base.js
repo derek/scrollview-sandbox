@@ -105,6 +105,7 @@ YUI.add('scrollview-base', function (Y, NAME) {
                 dimChangeHandler = sv._afterDimChange;
 
             this.after({
+                'scrollEnd': sv._afterScrollEnd,
                 'disabledChange': sv._afterDisabledChange,
                 'flickChange': sv._afterFlickChange,
                 'dragChange': sv._afterDragChange,
@@ -113,8 +114,8 @@ YUI.add('scrollview-base', function (Y, NAME) {
                 'heightChange': dimChangeHandler,
                 'widthChange': dimChangeHandler
             });
-
-            // TODO: Add cleanup method after 'scrollEnd'
+            
+            // TODO: dimChangeHandler is currently unused
         },
 
         /**
@@ -593,10 +594,6 @@ YUI.add('scrollview-base', function (Y, NAME) {
             gesture.endClientX = clientX;
             gesture.endClientY = clientY;
 
-            // TODO: Move to a cleanup method
-            gesture.onGestureMove.detach();
-            gesture.onGestureMoveEnd.detach();
-
             // Only if this gesture wasn't a flick, and there was movement
             if (!flick && gesture.deltaX !== null && gesture.deltaY !== null) {
                 if (sv._isOOB()) {
@@ -864,6 +861,25 @@ YUI.add('scrollview-base', function (Y, NAME) {
          */
         _afterDimChange: function () {
             this._uiDimensionsChange();
+        },
+
+        /**
+         * After listener for scrollEnd, for cleanup
+         *
+         * @method _afterScrollEnd
+         * @param e {Event.Facade} The event facade
+         * @protected
+         */
+        _afterScrollEnd: function (e) {
+            var sv = this,
+                gesture = sv._gesture,
+                flick = gesture.flick;
+
+            gesture.onGestureMove.detach();
+            gesture.onGestureMoveEnd.detach();
+
+            // TODO: Move to sv.prevGesture?
+            delete sv._gesture;
         }
 
     }, {
