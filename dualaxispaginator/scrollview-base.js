@@ -350,10 +350,10 @@ YUI.add('scrollview-base', function (Y, NAME) {
                 }
                 else {
                     // TODO: If both set, batch them in the same update
-                    if (xSet) {
+                    if (x !== null) {
                         node.setStyle(LEFT, newX + PX);
                     }
-                    if (ySet) {
+                    if (y !== null) {
                         node.setStyle(TOP, newY + PX);
                     }
                 }
@@ -361,7 +361,7 @@ YUI.add('scrollview-base', function (Y, NAME) {
 
             // Animate
             else {
-                transition.easing = easing,
+                transition.easing = easing;
                 transition.duration = duration / 1000;
 
                 if (NATIVE_TRANSITIONS) {
@@ -743,10 +743,10 @@ YUI.add('scrollview-base', function (Y, NAME) {
                 duration = ScrollView.SNAP_DURATION;
 
             if (newX !== currentX) {
-                sv.set(SCROLL_X, newX, {duration:duration})
+                sv.set(SCROLL_X, newX, {duration:duration});
             }
             else if (newY !== currentY) {
-                sv.set(SCROLL_Y, newY, {duration:duration})
+                sv.set(SCROLL_Y, newY, {duration:duration});
             }
             else {
                 sv._onTransEnd();
@@ -781,7 +781,7 @@ YUI.add('scrollview-base', function (Y, NAME) {
                 args.push(duration);
                 args.push(easing);
 
-                sv.scrollTo.apply(sv, args)
+                sv.scrollTo.apply(sv, args);
             }
         },
 
