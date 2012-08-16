@@ -40,6 +40,9 @@ YUI.add('scrollview-base', function (Y, NAME) {
         DIM_Y = 'y',
         BOUNDING_BOX = 'boundingBox',
         CONTENT_BOX = 'contentBox',
+        GESTURE_MOVE = 'gesturemove',
+        START = 'start',
+        END = 'end',
         EMPTY = '',
         ZERO = '0s',
 
@@ -122,7 +125,7 @@ YUI.add('scrollview-base', function (Y, NAME) {
         _bindDrag: function (drag) {
             var sv = this;
             if (drag) {
-                sv._bb.on(DRAG + '|gesturemovestart', Y.bind(sv._onGestureMoveStart, sv));
+                sv._bb.on(DRAG + '|' + GESTURE_MOVE + START, Y.bind(sv._onGestureMoveStart, sv));
             } else {
                 sv._bb.detach(DRAG + '|*');
             }
@@ -322,13 +325,13 @@ YUI.add('scrollview-base', function (Y, NAME) {
             node = node || cb;
 
             if (x !== null) {
-                x = _constrain(x, sv._minScrollX, sv._maxScrollX);
+                // x = _constrain(x, sv._minScrollX, sv._maxScrollX);
                 sv.set(SCROLL_X, x, {src:UI});
                 newX = -(x);
             }
 
             if (y !== null) {
-                y = _constrain(y, sv._minScrollY, sv._maxScrollY);
+                // y = _constrain(y, sv._minScrollY, sv._maxScrollY);
                 sv.set(SCROLL_Y, y, {src:UI});
                 newY = -(y);
             }
@@ -505,8 +508,8 @@ YUI.add('scrollview-base', function (Y, NAME) {
                     flick: null,
 
                     // Create some listeners for the rest of the gesture cycle
-                    onGestureMove: bb.on(DRAG + '|gesturemove', Y.bind(sv._onGestureMove, sv)),
-                    onGestureMoveEnd: bb.on(DRAG + '|gesturemoveend', Y.bind(sv._onGestureMoveEnd, sv))
+                    onGestureMove: bb.on(DRAG + '|' + GESTURE_MOVE, Y.bind(sv._onGestureMove, sv)),
+                    onGestureMoveEnd: bb.on(DRAG + '|' + GESTURE_MOVE + END, Y.bind(sv._onGestureMoveEnd, sv))
                 };
             }
         },
