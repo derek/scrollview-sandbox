@@ -96,6 +96,8 @@ YUI.add('scrollview-base', function (Y, NAME) {
         },
 
         /**
+         * 
+         *
          * @method _bindAttrs
          * @private
          */
@@ -104,7 +106,7 @@ YUI.add('scrollview-base', function (Y, NAME) {
                 scrollChangeHandler = sv._afterScrollChange,
                 dimChangeHandler = sv._afterDimChange;
 
-            this.after({
+            sv.after({
                 'scrollEnd': sv._afterScrollEnd,
                 'disabledChange': sv._afterDisabledChange,
                 'flickChange': sv._afterFlickChange,
@@ -114,8 +116,8 @@ YUI.add('scrollview-base', function (Y, NAME) {
                 'heightChange': dimChangeHandler,
                 'widthChange': dimChangeHandler
             });
-            
-            // TODO: dimChangeHandler is currently unused
+
+            Y.one(window).after('resize', dimChangeHandler, sv);
         },
 
         /**
@@ -147,7 +149,7 @@ YUI.add('scrollview-base', function (Y, NAME) {
         _bindFlick: function (flick) {
             var sv = this,
                 bb = sv._bb;
-                
+
             if (flick) {
                 bb.on(FLICK + '|' + FLICK, Y.bind(sv._flick, sv), flick);
             }
@@ -781,6 +783,7 @@ YUI.add('scrollview-base', function (Y, NAME) {
                 sv.set(SCROLL_Y, newY, {duration:duration});
             }
             else {
+                // It shouldn't ever get here, but in case it does, fire scrollEnd
                 sv._onTransEnd();
             }
         },
@@ -872,14 +875,17 @@ YUI.add('scrollview-base', function (Y, NAME) {
          */
         _afterScrollEnd: function (e) {
             var sv = this,
-                gesture = sv._gesture,
-                flick = gesture.flick;
+                gesture = sv._gesture;
 
             gesture.onGestureMove.detach();
             gesture.onGestureMoveEnd.detach();
-
-            // TODO: Move to sv.prevGesture?
-            delete sv._gesture;
+            
+            if (sv._flickAnim) {
+                sv._flickAnim.cancel(); // Might as well?
+            }
+            
+            delete sv._gesture; // TODO: Move to sv.prevGesture?
+            delete sv._flickAnim;
         }
 
     }, {
