@@ -113,6 +113,8 @@ YUI.add('scrollview-base', function (Y, NAME) {
                 'heightChange': dimChangeHandler,
                 'widthChange': dimChangeHandler
             });
+
+            // TODO: Add cleanup method after 'scrollEnd'
         },
 
         /**
@@ -123,12 +125,14 @@ YUI.add('scrollview-base', function (Y, NAME) {
          * @private
          */
         _bindDrag: function (drag) {
-            var sv = this;
+            var sv = this,
+                bb = sv._bb;
+
             if (drag) {
-                sv._bb.on(DRAG + '|' + GESTURE_MOVE + START, Y.bind(sv._onGestureMoveStart, sv));
+                bb.on(DRAG + '|' + GESTURE_MOVE + START, Y.bind(sv._onGestureMoveStart, sv));
             }
             else {
-                sv._bb.detach(DRAG + '|*');
+                bb.detach(DRAG + '|*');
             }
         },
 
@@ -140,12 +144,14 @@ YUI.add('scrollview-base', function (Y, NAME) {
          * @private
          */
         _bindFlick: function (flick) {
-            var sv = this;
+            var sv = this,
+                bb = sv._bb;
+                
             if (flick) {
-                sv._bb.on(FLICK + '|' + FLICK, Y.bind(sv._flick, sv), flick);
+                bb.on(FLICK + '|' + FLICK, Y.bind(sv._flick, sv), flick);
             }
             else {
-                sv._bb.detach(FLICK + '|*');
+                bb.detach(FLICK + '|*');
             }
         },
 
@@ -158,14 +164,16 @@ YUI.add('scrollview-base', function (Y, NAME) {
          */
         _bindMousewheel: function (mousewheel) {
             var sv = this,
+                bb = sv._bb,
                 axisY = sv.get(AXIS_Y);
 
             // Only enable for vertical scrollviews
             if (mousewheel && axisY) {
+                // Bound to document, because that's where mousewheel events fire off of.
                 Y.one(DOC).on(MOUSEWHEEL, Y.bind(sv._mousewheel, sv));
             }
             else {
-                sv._bb.detach(MOUSEWHEEL + '|*');
+                bb.detach(MOUSEWHEEL + '|*');
             }
         },
 
@@ -178,19 +186,21 @@ YUI.add('scrollview-base', function (Y, NAME) {
          */
         syncUI: function () {
             var sv = this;
+
             sv._cDisabled = sv.get(DISABLED);
             sv._uiDimensionsChange();
             sv._bindMousewheel(MOUSEWHEEL_ENABLED);
+
             if (sv._isOOB()) {
-                sv._afterOOB();
+                sv._snapBack();
             }
         },
 
         /**
-         * Utility method to obtain scrollWidth, scrollHeight,
-         * accounting for the impact of translate on scrollWidth, scrollHeight
+         * Utility method to obtain widget dimensions
+         * 
          * @method _getScrollDims
-         * @returns {Array} The offsetWidth, offsetHeight, scrollWidth and scrollHeight as an array: [offsetWidth, offsetHeight, scrollWidth, scrollHeight]
+         * @returns {Object} The offsetWidth, offsetHeight, scrollWidth and scrollHeight as an array: [offsetWidth, offsetHeight, scrollWidth, scrollHeight]
          * @private
          */
         _getScrollDims: function () {
@@ -310,6 +320,7 @@ YUI.add('scrollview-base', function (Y, NAME) {
          */
         scrollTo: function (x, y, duration, easing, node) {
 
+            // Check to see if widget is disabled
             if (this._cDisabled) {
                 return;
             }
@@ -323,18 +334,17 @@ YUI.add('scrollview-base', function (Y, NAME) {
                 transition = {},
                 transform;
 
+            // default the optional arguments
             duration = duration || 0;
             easing = easing || ScrollView.EASING;
             node = node || cb;
 
             if (x !== null) {
-                // x = _constrain(x, sv._minScrollX, sv._maxScrollX);
                 sv.set(SCROLL_X, x, {src:UI});
                 newX = -(x);
             }
 
             if (y !== null) {
-                // y = _constrain(y, sv._minScrollY, sv._maxScrollY);
                 sv.set(SCROLL_Y, y, {src:UI});
                 newY = -(y);
             }
@@ -391,9 +401,11 @@ YUI.add('scrollview-base', function (Y, NAME) {
         _transform: function (x, y) {
             // TODO: Would we be better off using a Matrix for this?
             var prop = 'translate(' + x + 'px, ' + y + 'px)';
+
             if (this._forceHWTransforms) {
                 prop += ' translateZ(0)';
             }
+
             return prop;
         },
 
@@ -405,15 +417,14 @@ YUI.add('scrollview-base', function (Y, NAME) {
          * @private
          */
         _onTransEnd: function (e) {
+            var sv = this;
+
             /**
              * Notification event fired at the end of a scroll transition
              *
              * @event scrollEnd
              * @param e {EventFacade} The default event facade.
              */
-            // TODO: move elsewhere
-            var sv = this;
-
             sv.fire(EV_SCROLL_END);
         },
 
@@ -473,6 +484,7 @@ YUI.add('scrollview-base', function (Y, NAME) {
                     currentX = sv.get(SCROLL_X),
                     currentY = sv.get(SCROLL_Y);
 
+                // Cache the axis values
                 sv._cAxisX = axisX;
                 sv._cAxisY = axisY;
 
@@ -488,7 +500,10 @@ YUI.add('scrollview-base', function (Y, NAME) {
                     sv._flickAnim.cancel();
                 }
 
+                // Stores data for this gesture cycle.  Cleaned up later
                 sv._gesture = {
+
+                    // Will hold the axis value
                     axis: null,
 
                     // The current attribute values
@@ -557,7 +572,7 @@ YUI.add('scrollview-base', function (Y, NAME) {
         },
 
         /**
-         * gestureend event handler
+         * gesturemoveend event handler
          *
          * @method _onGestureMoveEnd
          * @param e {Event.Facade} The gesturemoveend event facade
@@ -578,14 +593,14 @@ YUI.add('scrollview-base', function (Y, NAME) {
             gesture.endClientX = clientX;
             gesture.endClientY = clientY;
 
+            // TODO: Move to a cleanup method
             gesture.onGestureMove.detach();
             gesture.onGestureMoveEnd.detach();
 
             // Only if this gesture wasn't a flick, and there was movement
             if (!flick && gesture.deltaX !== null && gesture.deltaY !== null) {
-                isOOB = sv._isOOB();
-                if (isOOB) {
-                    sv._afterOOB();
+                if (sv._isOOB()) {
+                    sv._snapBack();
                 }
                 else {
                     // Don't fire scrollEnd on the gesture axis is the same as paginator's
@@ -654,16 +669,19 @@ YUI.add('scrollview-base', function (Y, NAME) {
 
             velocity *= deceleration;
 
+            // If we are out of bounds
             if (sv._isOOB()) {
-                // If we're past an edge, bounce back
-                sv._afterOOB();
+                // We're past an edge, now bounce back
+                sv._snapBack();
             }
+            
+            // If the velocity gets slow enough, just stop
             else if (Math.abs(velocity).toFixed(4) <= 0.015) {
-                // If the velocity gets slow enough, just stop
                 sv._onTransEnd();
             }
+
+            // Otherwise, animate to the next frame
             else {
-                // Or, animate another frame
                 if (axis === DIM_X && axisX) {
                     if (newX < minX || newX > maxX) {
                         velocity *= bounce;
@@ -713,6 +731,7 @@ YUI.add('scrollview-base', function (Y, NAME) {
                     // sv.scrollbars._hostDimensionsChange();
                 }
 
+                // Fire the 'scrollEnd' event
                 sv._onTransEnd();
 
                 // prevent browser default behavior on mouse scroll
@@ -720,7 +739,13 @@ YUI.add('scrollview-base', function (Y, NAME) {
             }
         },
 
-        // TODO
+        /**
+         * Checks to see the current scrollX/scrollY position is out of bounds
+         *
+         * @method _isOOB
+         * @returns {boolen} Whether the current X/Y position is out of bounds (true) or not (false)
+         * @private
+         */
         _isOOB: function () {
             var sv = this,
                 currentX = sv.get(SCROLL_X),
@@ -733,8 +758,14 @@ YUI.add('scrollview-base', function (Y, NAME) {
             return currentX < minX || currentX > maxX || currentY < minY || currentY > maxY;
         },
 
-        // TODO
-        _afterOOB: function () {
+        /**
+         * Bounces back
+         * @TODO: Should be more generalized and support both X and Y detection
+         *
+         * @method _snapBack
+         * @private
+         */
+        _snapBack: function () {
             var sv = this,
                 currentX = sv.get(SCROLL_X),
                 currentY = sv.get(SCROLL_Y),
@@ -769,23 +800,24 @@ YUI.add('scrollview-base', function (Y, NAME) {
                 duration = e.duration,
                 easing = e.easing,
                 val = e.newVal,
-                args = [];
+                scrollToArgs = [];
 
             if (e.src !== ScrollView.UI_SRC) {
 
+                // Generate the array of args to pass to scrollTo()
                 if (e.attrName === SCROLL_X) {
-                    args.push(val);
-                    args.push(sv.get(SCROLL_Y));
+                    scrollToArgs.push(val);
+                    scrollToArgs.push(sv.get(SCROLL_Y));
                 }
                 else {
-                    args.push(sv.get(SCROLL_X));
-                    args.push(val);
+                    scrollToArgs.push(sv.get(SCROLL_X));
+                    scrollToArgs.push(val);
                 }
 
-                args.push(duration);
-                args.push(easing);
+                scrollToArgs.push(duration);
+                scrollToArgs.push(easing);
 
-                sv.scrollTo.apply(sv, args);
+                sv.scrollTo.apply(sv, scrollToArgs);
             }
         },
 
