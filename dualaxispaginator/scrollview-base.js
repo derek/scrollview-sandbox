@@ -126,7 +126,8 @@ YUI.add('scrollview-base', function (Y, NAME) {
             var sv = this;
             if (drag) {
                 sv._bb.on(DRAG + '|' + GESTURE_MOVE + START, Y.bind(sv._onGestureMoveStart, sv));
-            } else {
+            }
+            else {
                 sv._bb.detach(DRAG + '|*');
             }
         },
@@ -142,7 +143,8 @@ YUI.add('scrollview-base', function (Y, NAME) {
             var sv = this;
             if (flick) {
                 sv._bb.on(FLICK + '|' + FLICK, Y.bind(sv._flick, sv), flick);
-            } else {
+            }
+            else {
                 sv._bb.detach(FLICK + '|*');
             }
         },
@@ -161,7 +163,8 @@ YUI.add('scrollview-base', function (Y, NAME) {
             // Only enable for vertical scrollviews
             if (mousewheel && axisY) {
                 Y.one(DOC).on(MOUSEWHEEL, Y.bind(sv._mousewheel, sv));
-            } else {
+            }
+            else {
                 sv._bb.detach(MOUSEWHEEL + '|*');
             }
         },
@@ -583,7 +586,8 @@ YUI.add('scrollview-base', function (Y, NAME) {
                 isOOB = sv._isOOB();
                 if (isOOB) {
                     sv._afterOOB();
-                } else {
+                }
+                else {
                     // Don't fire scrollEnd on the gesture axis is the same as paginator's
                     // Not totally confident this is a good idea
                     if (sv.pages && sv.pages.get('axis') !== gesture.axis) {
