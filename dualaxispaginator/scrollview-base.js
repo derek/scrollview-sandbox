@@ -10,7 +10,8 @@
 YUI.add('scrollview-base', function (Y, NAME) {
 
     var getClassName = Y.ClassNameManager.getClassName,
-        DOC = Y.config.doc,
+        DOCUMENT = Y.config.doc,
+        WINDOW = Y.config.win,
         IE = Y.UA.ie,
         NATIVE_TRANSITIONS = Y.Transition.useNative,
         SCROLLVIEW = 'scrollview',
@@ -117,7 +118,8 @@ YUI.add('scrollview-base', function (Y, NAME) {
                 'widthChange': dimChangeHandler
             });
 
-            Y.one(window).after('resize', dimChangeHandler, sv);
+            // TODO: This should be throttled.
+            Y.one(WINDOW).after('resize', dimChangeHandler, sv);
         },
 
         /**
@@ -173,7 +175,7 @@ YUI.add('scrollview-base', function (Y, NAME) {
             // Only enable for vertical scrollviews
             if (mousewheel && axisY) {
                 // Bound to document, because that's where mousewheel events fire off of.
-                Y.one(DOC).on(MOUSEWHEEL, Y.bind(sv._mousewheel, sv));
+                Y.one(DOCUMENT).on(MOUSEWHEEL, Y.bind(sv._mousewheel, sv));
             }
             else {
                 bb.detach(MOUSEWHEEL + '|*');
@@ -366,6 +368,7 @@ YUI.add('scrollview-base', function (Y, NAME) {
                 }
                 else {
                     // TODO: If both set, batch them in the same update
+                    // Update: Nope, setStyles() just loops through each property and applies it.
                     if (x !== null) {
                         node.setStyle(LEFT, newX + PX);
                     }
@@ -877,15 +880,23 @@ YUI.add('scrollview-base', function (Y, NAME) {
             var sv = this,
                 gesture = sv._gesture;
 
-            gesture.onGestureMove.detach();
-            gesture.onGestureMoveEnd.detach();
-            
+            if (gesture.onGestureMove && gesture.onGestureMove.detach) {
+                gesture.onGestureMove.detach();
+            }
+
+            if (gesture.onGestureMoveEnd && gesture.onGestureMoveEnd.detach) {
+                gesture.onGestureMoveEnd.detach();
+            }
+
             if (sv._flickAnim) {
                 sv._flickAnim.cancel(); // Might as well?
             }
             
-            delete sv._gesture; // TODO: Move to sv.prevGesture?
             delete sv._flickAnim;
+
+            // Ideally this should be removed, but doing so causing some JS errors with fast swiping 
+            // because they're being deleted after the previous properties have been overwritten
+            // delete sv._gesture; // TODO: Move to sv.prevGesture?
         }
 
     }, {
