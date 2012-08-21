@@ -880,11 +880,11 @@ YUI.add('scrollview-base', function (Y, NAME) {
             var sv = this,
                 gesture = sv._gesture;
 
-            if (gesture.onGestureMove && gesture.onGestureMove.detach) {
+            if (gesture && gesture.onGestureMove && gesture.onGestureMove.detach) {
                 gesture.onGestureMove.detach();
             }
 
-            if (gesture.onGestureMoveEnd && gesture.onGestureMoveEnd.detach) {
+            if (gesture && gesture.onGestureMoveEnd && gesture.onGestureMoveEnd.detach) {
                 gesture.onGestureMoveEnd.detach();
             }
 
@@ -895,7 +895,7 @@ YUI.add('scrollview-base', function (Y, NAME) {
             delete sv._flickAnim;
 
             // Ideally this should be removed, but doing so causing some JS errors with fast swiping 
-            // because they're being deleted after the previous properties have been overwritten
+            // because _gesture is being deleted after the previous one has been overwritten
             // delete sv._gesture; // TODO: Move to sv.prevGesture?
         }
 

@@ -1,8 +1,7 @@
 /*jslint nomen:true sloppy:true*/
 /*global YUI*/
 
-YUI.add('paginator-plugin', function (Y, NAME) {
-
+YUI.add('scrollview-paginator', function (Y, NAME) {
     /**
      * Provides a plugin, which adds pagination support to ScrollView instances
      *
@@ -89,7 +88,9 @@ YUI.add('paginator-plugin', function (Y, NAME) {
         index: {
             value: 0,
             validator: function (val) {
-                return val >= 0 && val < this.get(TOTAL);
+                // TODO: Remove this?
+                // return val >= 0 && val < this.get(TOTAL);
+                return true;
             }
         },
 
@@ -124,26 +125,33 @@ YUI.add('paginator-plugin', function (Y, NAME) {
                 cb = host.get(CONTENT_BOX),
                 hostFlick = host.get(FLICK);
 
-            paginator.optimizeMemory = config.optimizeMemory || false;
-            paginator.padding = config.padding || 1;
-            paginator.set(AXIS, config.axis);
+            // Default it to an empty object
+            config = config || {};
 
-            paginator._cIndex = 0;
-            paginator._prevent = new Y.Do.Prevent();
-            paginator.cards = [];
+            // Set any config attrs
+            paginator.set(AXIS, config.axis);
 
             // Don't allow flicks on the paginated axis
             if (config.axis === DIM_X) {
                 hostFlick.axis = DIM_Y;
                 host.set(FLICK, hostFlick);
-            } else if (config.axis === DIM_Y) {
+            }
+            else if (config.axis === DIM_Y) {
                 hostFlick.axis = DIM_X;
                 host.set(FLICK, hostFlick);
             }
 
+            // Initialize & default
+            paginator.optimizeMemory = config.optimizeMemory || false;
+            paginator.padding = config.padding || 1;
+            paginator.cards = [];
+
+            // Cache some values
             paginator._bb = bb;
             paginator._cb = cb;
             paginator._host = host;
+            paginator._cIndex = config.index || 0;
+            paginator._prevent = new Y.Do.Prevent();
 
             // Event listeners
             paginator.after('indexChange', paginator._afterIndexChange);
@@ -170,19 +178,30 @@ YUI.add('paginator-plugin', function (Y, NAME) {
                 host = paginator._host,
                 index = paginator._cIndex,
                 paginatorAxis = paginator.get(AXIS),
+                pageNodes = paginator._getPageNodes(),
+                size = pageNodes.size(),
                 maxScrollX = paginator.cards[index].maxScrollX,
                 maxScrollY = paginator.cards[index].maxScrollY;
 
             if (paginatorAxis === DIM_Y) {
                 host._maxScrollX = maxScrollX;
-            } else if (paginatorAxis === DIM_X) {
+            }
+            else if (paginatorAxis === DIM_X) {
                 host._maxScrollY = maxScrollY;
+            }
+
+            // Set the page count
+            paginator.set(TOTAL, size);
+
+            // Jump to the index
+            if (index !== 0) {
+                paginator.scrollToIndex(index, 0);
             }
 
             // Add the paginator class
             bb.addClass(CLASS_PAGED);
 
-            paginator._optimize();
+            // paginator._optimize();
         },
 
         /**
@@ -193,6 +212,7 @@ YUI.add('paginator-plugin', function (Y, NAME) {
          * @protected
          */
         _afterHostUIDimensionsChange: function (e) {
+
             var paginator = this,
                 host = paginator._host,
                 bb = paginator._bb,
@@ -200,8 +220,6 @@ YUI.add('paginator-plugin', function (Y, NAME) {
                 widgetHeight = bb.get('offsetHeight'),
                 pageNodes = paginator._getPageNodes(),
                 size = pageNodes.size();
-
-            paginator.set(TOTAL, size);
 
             // Inefficient. Should not reinitialize every card every syncUI
             pageNodes.each(function (node, i) {
@@ -513,7 +531,13 @@ YUI.add('paginator-plugin', function (Y, NAME) {
             duration = (duration !== undefined) ? duration : PaginatorPlugin.TRANSITION.duration;
             easing = (easing !== undefined) ? duration : PaginatorPlugin.TRANSITION.easing;
 
+            // Set the index ATTR to the specified index value
+            paginator.set(INDEX, index);
+
+            // Makes sure the viewport nodes are visible
             paginator._showNodes(pageNode);
+
+            // Scroll to the offset
             host.set(scrollAxis, scrollOffset, {
                 duration: duration,
                 easing: easing
@@ -534,4 +558,4 @@ YUI.add('paginator-plugin', function (Y, NAME) {
 
     Y.namespace('Plugin').ScrollViewPaginator = PaginatorPlugin;
 
-}, null, { requires: ['classnamemanager', 'plugin'] });
+}, null, { requires: ['classnamemanager', 'plugin', 'scrollview-base'] });
