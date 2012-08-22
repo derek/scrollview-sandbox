@@ -1,14 +1,13 @@
 /*jslint nomen:true sloppy:true*/
 /*global YUI*/
 
-/**
- * The scrollview-base module provides a basic ScrollView Widget, without scrollbar indicators
- *
- * @module scrollview-base
- */
-
 YUI.add('scrollview-base', function (Y, NAME) {
 
+    /**
+     * The scrollview-base module provides a basic ScrollView Widget, without scrollbar indicators
+     *
+     * @module scrollview-base
+     */
     var getClassName = Y.ClassNameManager.getClassName,
         DOCUMENT = Y.config.doc,
         WINDOW = Y.config.win,
@@ -72,8 +71,9 @@ YUI.add('scrollview-base', function (Y, NAME) {
          * Designated initializer
          *
          * @method initializer
+         * @param {config} Configuration object for the plugin
          */
-        initializer: function () {
+        initializer: function (config) {
             var sv = this;
             sv._bb = sv.get(BOUNDING_BOX);
             sv._cb = sv.get(CONTENT_BOX);
@@ -322,6 +322,7 @@ YUI.add('scrollview-base', function (Y, NAME) {
          * @param y {Number} The y-position to scroll to
          * @param duration {Number} Duration, in ms, of the scroll animation (default is 0)
          * @param easing {String} An easing equation if duration is set
+         * @param node {String} The node to move
          */
         scrollTo: function (x, y, duration, easing, node) {
 
@@ -898,10 +899,12 @@ YUI.add('scrollview-base', function (Y, NAME) {
             // because _gesture is being deleted after the previous one has been overwritten
             // delete sv._gesture; // TODO: Move to sv.prevGesture?
         }
+        
+        // End prototype properties
 
     }, {
 
-        // *** Y.ScrollView static properties
+        // Static properties
 
         /**
          * The identity of the widget.
@@ -1102,6 +1105,9 @@ YUI.add('scrollview-base', function (Y, NAME) {
             DURATION: Y.Transition._VENDOR_PREFIX + 'TransitionDuration',
             PROPERTY: Y.Transition._VENDOR_PREFIX + 'TransitionProperty'
         }
+
+        // End static properties
+
     });
 
 }, null, { requires: ['classnamemanager', 'transition', 'widget', 'plugin', 'event-gestures'] });

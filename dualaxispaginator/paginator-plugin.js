@@ -2,8 +2,9 @@
 /*global YUI*/
 
 YUI.add('scrollview-paginator', function (Y, NAME) {
+
     /**
-     * Provides a plugin, which adds pagination support to ScrollView instances
+     * Provides a plugin that adds pagination support to ScrollView instances
      *
      * @module scrollview-paginator
      */
@@ -38,85 +39,13 @@ YUI.add('scrollview-paginator', function (Y, NAME) {
         PaginatorPlugin.superclass.constructor.apply(this, arguments);
     }
 
-    /**
-     * The identity of the plugin
-     *
-     * @property NAME
-     * @type String
-     * @default 'paginatorPlugin'
-     * @static
-     */
-    PaginatorPlugin.NAME = 'pluginScrollViewPaginator';
-
-    /**
-     * The namespace on which the plugin will reside
-     *
-     * @property NS
-     * @type String
-     * @default 'pages'
-     * @static
-     */
-    PaginatorPlugin.NS = 'pages';
-
-    /**
-     * The default attribute configuration for the plugin
-     *
-     * @property ATTRS
-     * @type Object
-     * @static
-     */
-    PaginatorPlugin.ATTRS = {
-
-        /**
-         * CSS selector for a page inside the scrollview. The scrollview
-         * will snap to the closest page.
-         *
-         * @attribute selector
-         * @type {String}
-         */
-        selector: {
-            value: null
-        },
-
-        /**
-         * The active page number for a paged scrollview
-         *
-         * @attribute index
-         * @type {Number}
-         * @default 0
-         */
-        index: {
-            value: 0,
-            validator: function (val) {
-                // TODO: Remove this?
-                // return val >= 0 && val < this.get(TOTAL);
-                return true;
-            }
-        },
-
-        /**
-         * The total number of pages
-         *
-         * @attribute total
-         * @type {Number}
-         * @default 0
-         */
-        total: {
-            value: 0
-        },
-
-        // TODO
-        axis: {
-            value: DIM_X
-        }
-    };
-
     Y.extend(PaginatorPlugin, Y.Plugin.Base, {
 
         /**
          * Designated initializer
          *
          * @method initializer
+         * @param {config} Configuration object for the plugin
          */
         initializer: function (config) {
             var paginator = this,
@@ -157,16 +86,16 @@ YUI.add('scrollview-paginator', function (Y, NAME) {
             paginator.after('indexChange', paginator._afterIndexChange);
 
             // Method listeners
-            paginator.beforeHostMethod('scrollTo', paginator._onScrollTo);
+            paginator.beforeHostMethod('scrollTo', paginator._beforeHostScrollTo);
             paginator.beforeHostMethod('_mousewheel', paginator._beforeHostMousewheel);
-            paginator.afterHostMethod('_onGestureMoveEnd', paginator._gestureMoveEnd);
+            paginator.afterHostMethod('_onGestureMoveEnd', paginator._afterHostGestureMoveEnd);
             paginator.afterHostMethod('_uiDimensionsChange', paginator._afterHostUIDimensionsChange);
             paginator.afterHostEvent('render', paginator._afterHostRender);
-            paginator.afterHostEvent('scrollEnd', paginator._scrollEnded);
+            paginator.afterHostEvent('scrollEnd', paginator._afterHostScrollEnded);
         },
 
         /**
-         * After host render handler
+         * After host render
          *
          * @method _afterHostRender
          * @param {Event.Facade}
@@ -245,7 +174,17 @@ YUI.add('scrollview-paginator', function (Y, NAME) {
             });
         },
 
-        _onScrollTo: function (x, y, duration, easing, node) {
+        /**
+         * Executed before host.scrollTo
+         *
+         * @method _beforeHostScrollTo
+         * @param x {Number} The x-position to scroll to
+         * @param y {Number} The y-position to scroll to
+         * @param duration {Number} Duration, in ms, of the scroll animation (default is 0)
+         * @param easing {String} An easing equation if duration is set
+         * @param node {String} The node to move
+         */
+        _beforeHostScrollTo: function (x, y, duration, easing, node) {
             var paginator = this,
                 host = paginator._host,
                 gesture = host._gesture,
@@ -269,16 +208,19 @@ YUI.add('scrollview-paginator', function (Y, NAME) {
                 }
             }
 
+            // Return the modified argument list
             return new Y.Do.AlterArgs("new args", [x, y, duration, easing, node]);
         },
 
         /**
          * Executed after host._gestureMoveEnd
+         * Determines if the gesture should page prev or next (if at all)
          *
-         * @method _onGestureMoveEnd
+         * @method _afterHostGestureMoveEnd
+         * @param {Event.Facade}
          * @protected
          */
-        _gestureMoveEnd: function (e) {
+        _afterHostGestureMoveEnd: function (e) {
             var paginator = this,
                 host = paginator._host,
                 gesture = host._gesture,
@@ -295,9 +237,10 @@ YUI.add('scrollview-paginator', function (Y, NAME) {
         },
 
         /**
-         * Executed to respond to the mousewheel event, by over-riding the default mousewheel method.
+         * Executed before host._mousewheel
+         * Prevents mousewheel events in some conditions
          *
-         * @method _mousewheel
+         * @method _beforeHostMousewheel
          * @param {Event.Facade}
          * @protected
          */
@@ -332,13 +275,14 @@ YUI.add('scrollview-paginator', function (Y, NAME) {
         },
 
         /**
-         * scrollEnd handler to run some cleanup operations
+         * Executes after host's 'scrollEnd' event
+         * Runs cleanup operations
          *
-         * @method _scrollEnded
+         * @method _afterHostScrollEnded
          * @param {Event.Facade}
          * @protected
          */
-        _scrollEnded: function (e) {
+        _afterHostScrollEnded: function (e) {
             var paginator = this,
                 host = this._host,
                 index = paginator._cIndex,
@@ -388,21 +332,22 @@ YUI.add('scrollview-paginator', function (Y, NAME) {
         },
 
         /**
-         * Improves performance by hiding page nodes not near the viewport
+         * Hides page nodes not near the viewport
          *
          * @method _optimize
          * @protected
          */
         _optimize: function () {
+
+            if (!this.optimizeMemory) {
+                return false;
+            }
+
             var paginator = this,
                 host = paginator._host,
                 optimizeMemory = paginator.optimizeMemory,
                 currentIndex = paginator._cIndex,
                 pageNodes;
-
-            if (!optimizeMemory) {
-                return false;
-            }
 
             // Show the pages in/near the viewport & hide the rest
             pageNodes = paginator._getStage(currentIndex);
@@ -424,6 +369,7 @@ YUI.add('scrollview-paginator', function (Y, NAME) {
                 pageCount = this.get(TOTAL),
                 start = Math.max(0, index - padding),
                 end = Math.min(pageCount, index + 1 + padding); // noninclusive
+
             return {
                 visible: pageNodes.splice(start, end - start),
                 hidden: pageNodes
@@ -434,7 +380,7 @@ YUI.add('scrollview-paginator', function (Y, NAME) {
          * A utility method to show node(s)
          *
          * @method _showNodes
-         * @param nodeList {nodeList}
+         * @param nodeList {Object} The list of nodes to show
          * @protected
          */
         _showNodes: function (nodeList) {
@@ -447,7 +393,7 @@ YUI.add('scrollview-paginator', function (Y, NAME) {
          * A utility method to hide node(s)
          *
          * @method _hideNodes
-         * @param nodeList {nodeList}
+         * @param nodeList {Object} The list of nodes to hide
          * @protected
          */
         _hideNodes: function (nodeList) {
@@ -469,6 +415,7 @@ YUI.add('scrollview-paginator', function (Y, NAME) {
                 cb = host.get(CONTENT_BOX),
                 pageSelector = paginator.get(SELECTOR),
                 pageNodes = pageSelector ? cb.all(pageSelector) : cb.get('children');
+
             return pageNodes;
         },
 
@@ -487,6 +434,7 @@ YUI.add('scrollview-paginator', function (Y, NAME) {
                 return;
             }
 
+            // Update the index
             paginator.set(INDEX, target);
         },
 
@@ -504,10 +452,13 @@ YUI.add('scrollview-paginator', function (Y, NAME) {
                 return;
             }
 
+            // Update the index
             paginator.set(INDEX, target);
         },
-
-        // For backwards compatibility
+        
+        /** 
+         * @deprecated
+         */
         scrollTo: function () {
             return this.scrollToIndex.apply(this, arguments);
         },
@@ -543,18 +494,109 @@ YUI.add('scrollview-paginator', function (Y, NAME) {
                 easing: easing
             });
         }
-    });
+        
+        // End prototype properties
 
-    /**
-     * The default snap to current duration and easing values used on scroll end.
-     *
-     * @property SNAP_TO_CURRENT
-     * @static
-     */
-    PaginatorPlugin.TRANSITION = {
-        duration: 300,
-        easing: 'ease-out'
-    };
+    }, {
+        
+        // Static properties
+
+        /**
+         * The identity of the plugin
+         *
+         * @property NAME
+         * @type String
+         * @default 'pluginScrollViewPaginator'
+         * @readOnly
+         * @protected
+         * @static
+         */
+        NAME: 'pluginScrollViewPaginator',
+
+        /**
+         * The namespace on which the plugin will reside
+         *
+         * @property NS
+         * @type String
+         * @default 'pages'
+         * @static
+         */
+        NS: 'pages',
+
+        /**
+         * The default attribute configuration for the plugin
+         *
+         * @property ATTRS
+         * @type {Object}
+         * @static
+         */
+        ATTRS: {
+
+            /**
+             * CSS selector for a page inside the scrollview. The scrollview
+             * will snap to the closest page.
+             *
+             * @attribute selector
+             * @type {String}
+             * @default null
+             */
+            selector: {
+                value: null
+            },
+
+            /**
+             * The active page number for a paged scrollview
+             *
+             * @attribute index
+             * @type {Number}
+             * @default 0
+             */
+            index: {
+                value: 0,
+                validator: function (val) {
+                    // TODO: Remove this?
+                    // return val >= 0 && val < this.get(TOTAL);
+                    return true;
+                }
+            },
+
+            /**
+             * The total number of pages
+             *
+             * @attribute total
+             * @type {Number}
+             * @default 0
+             */
+            total: {
+                value: 0
+            },
+
+            /**
+             * The axis on which to paginate
+             *
+             * @attribute axis
+             * @type {String}
+             * @default 'x'
+             */
+            axis: {
+                value: DIM_X
+            }
+        },
+            
+        /**
+         * The default snap to current duration and easing values used on scroll end.
+         *
+         * @property SNAP_TO_CURRENT
+         * @static
+         */
+        TRANSITION: {
+            duration: 300,
+            easing: 'ease-out'
+        }
+
+        // End static properties
+
+    });
 
     Y.namespace('Plugin').ScrollViewPaginator = PaginatorPlugin;
 
